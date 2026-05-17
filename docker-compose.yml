@@ -27,6 +27,7 @@ services:
             - .env
         environment:
             NODE_ENV: production
+            DOCKER_ENV: local
             DB_HOST: postgres
             DB_PORT: 5432
             DB_USER: ${DB_USER}

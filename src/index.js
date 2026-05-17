@@ -371,7 +371,8 @@ app.listen(PORT, "0.0.0.0", () => {
     console.log("🔐 JWT configurado:", !!process.env.JWT_SECRET);
 
     // Iniciar agendador de atualizações
-    const isDevelopment = NODE_ENV === "development";
+    const isDevelopment =
+        NODE_ENV === "development" || process.env.DOCKER_ENV === "local";
 
     if (isDevelopment) {
         console.log("⏰ Modo DESENVOLVIMENTO - Cron interno ativado");
