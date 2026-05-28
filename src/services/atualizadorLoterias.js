@@ -1,6 +1,17 @@
+const { enviarEmailsNovasLoterias } = require("./emailService");
 const pool = require("../config/database");
-
 const CaixaAPI = require("./caixaAPI");
+
+const EMOJIS = {
+    megasena: "🟢",
+    lotofacil: "🟣",
+    quina: "🔵",
+    lotomania: "🟠",
+    duplasena: "🔴",
+    timemania: "🟡",
+    diadesorte: "🌸",
+    maismilionaria: "💎",
+};
 
 // Configuração das loterias e suas APIs
 const LOTERIAS_CONFIG = {
@@ -406,6 +417,24 @@ async function atualizarTodasLoterias() {
     console.log(
         `\n✅ Atualização concluída! Total de novos concursos: ${totalNovos}`,
     );
+
+    if (totalNovos > 0) {
+        const loteriasComNovos = Object.entries(resultados)
+            .filter(
+                ([id, r]) =>
+                    r.success && r.novos && r.novos > 0 && id === "lotofacil",
+            )
+            .map(([id, r]) => ({
+                nome: r.loteria || id,
+                emoji: EMOJIS[id] || "🎯",
+                concurso: r.concursos?.[r.concursos.length - 1] || 0,
+                acumulou: false,
+            }));
+
+        if (loteriasComNovos.length > 0) {
+            await enviarEmailsNovasLoterias(loteriasComNovos);
+        }
+    }
 
     return {
         success: true,

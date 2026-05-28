@@ -94,6 +94,7 @@ const adminRoutes = require("./routes/adminRoutes");
 // ============================================
 const atualizadorRoutes = require("./routes/atualizadorRoutes");
 const { iniciarAgendador } = require("./services/agendador");
+const emailNotifRoutes = require("./routes/emailNotifRoutes");
 
 // ============================================
 // MIDDLEWARES (ORDEM CORRETA)
@@ -137,6 +138,7 @@ app.use("/api/admin", adminRoutes);
 // ============================================
 app.use("/api/atualizar", atualizadorRoutes);
 app.use("/api", cronRoutes);
+app.use("/api/notificacoes", emailNotifRoutes);
 
 // ============================================
 // ROTA RAIZ - DOCUMENTAÇÃO DA API
