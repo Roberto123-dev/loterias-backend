@@ -1,6 +1,7 @@
 const { enviarEmailsNovasLoterias } = require("./emailService");
 const pool = require("../config/database");
 const CaixaAPI = require("./caixaAPI");
+const resultadosCache = require("./resultadosCache");
 
 const EMOJIS = {
     megasena: "🟢",
@@ -417,6 +418,9 @@ async function atualizarTodasLoterias() {
     console.log(
         `\n✅ Atualização concluída! Total de novos concursos: ${totalNovos}`,
     );
+
+    // 🧹 limpa o cache pra próxima requisição pegar os dados frescos
+    resultadosCache.invalidate();
 
     if (totalNovos > 0) {
         const loteriasComNovos = Object.entries(resultados)
