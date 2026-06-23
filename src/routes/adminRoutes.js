@@ -1,3 +1,5 @@
+// meus-projetos-principais\meu-projeto\backend\src\routes\adminRoutes.js
+
 // ============================================
 // ADMIN ROUTES
 // ============================================

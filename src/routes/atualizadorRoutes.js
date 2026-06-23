@@ -1,3 +1,4 @@
+// meus-projetos-principais\meu-projeto\backend\src\routes\atualizadorRoutes.js
 const express = require("express");
 const router = express.Router();
 const { executarAtualizacaoManual } = require("../services/agendador.js");

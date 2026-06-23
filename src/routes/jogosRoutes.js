@@ -1,3 +1,4 @@
+// meus-projetos-principais\meu-projeto\backend\src\routes\jogosRoutes.js
 // ============================================
 // JOGOS ROUTES - VERSÃO FINAL CORRETA
 // ============================================
@@ -26,8 +27,6 @@ router.delete("/grupos", jogosController.excluirGrupo);
 // ============================================
 router.put("/nome", jogosController.atualizarNomeGrupo);
 router.delete("/nome", jogosController.removerNomeGrupo);
-
-
 
 // ============================================
 // CONFERÊNCIA AUTOMÁTICA

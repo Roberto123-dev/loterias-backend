@@ -1,3 +1,4 @@
+// meus-projetos-principais\meu-projeto\backend\src\routes\emailNotifRoutes.js
 const express = require("express");
 const router = express.Router();
 const pool = require("../config/database");

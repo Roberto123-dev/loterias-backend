@@ -1,8 +1,4 @@
-// ============================================
-// AUTH MIDDLEWARE
-// ============================================
-// Arquivo: src/middlewares/authMiddleware.js
-
+// meus-projetos-principais\meu-projeto\backend\src\middlewares\authMiddleware.js
 const jwt = require("jsonwebtoken");
 
 const PUBLIC_ROUTES = [
@@ -25,7 +21,8 @@ const authMiddleware = (req, res, next) => {
         if (!authHeader) {
             return res.status(401).json({
                 success: false,
-                message: "Token não fornecido. Faça login para acessar este recurso.",
+                message:
+                    "Token não fornecido. Faça login para acessar este recurso.",
             });
         }
 
@@ -52,7 +49,7 @@ const authMiddleware = (req, res, next) => {
         const decoded = jwt.verify(
             token,
             process.env.JWT_SECRET ||
-            "sua_chave_secreta_super_segura_aqui_mude_isso_em_producao"
+                "sua_chave_secreta_super_segura_aqui_mude_isso_em_producao",
         );
 
         // ✅ CORRIGIDO: Adiciona a role no objeto req.usuario
