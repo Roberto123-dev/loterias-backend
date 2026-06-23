@@ -81,7 +81,6 @@ const maismilionariaRoutes = require("./routes/maismilionariaRoutes");
 // ============================================
 // IMPORTAR ROTAS DE USUÁRIO E PLANOS
 // ============================================
-const usuarioRoutes = require("./routes/usuarioRoutes");
 const planosRoutes = require("./routes/planosRoutes");
 
 // ============================================
@@ -114,7 +113,6 @@ app.use((req, res, next) => {
 // ============================================
 app.use("/api/auth", authRoutes);
 app.use("/api/jogos", jogosRoutes);
-app.use("/usuarios", usuarioRoutes);
 app.use("/api/resultados", resultadosRoutes);
 app.use("/api/loterias", loteriasRoutes);
 
