@@ -1,5 +1,6 @@
 // meus-projetos-principais\meu-projeto\backend\src\middlewares\authMiddleware.js
 const jwt = require("jsonwebtoken");
+const { JWT_SECRET } = require("../config/jwt");
 
 const PUBLIC_ROUTES = [
     "/api/auth/login",
@@ -46,11 +47,7 @@ const authMiddleware = (req, res, next) => {
         }
 
         // Verificar e decodificar token
-        const decoded = jwt.verify(
-            token,
-            process.env.JWT_SECRET ||
-                "sua_chave_secreta_super_segura_aqui_mude_isso_em_producao",
-        );
+        const decoded = jwt.verify(token, JWT_SECRET);
 
         // ✅ CORRIGIDO: Adiciona a role no objeto req.usuario
         req.usuario = {

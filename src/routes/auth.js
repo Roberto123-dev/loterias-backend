@@ -9,7 +9,7 @@ const { sendEmail } = require("../config/email");
 const router = express.Router();
 
 // Configurações
-const JWT_SECRET = process.env.JWT_SECRET || "sua_chave_secreta_aqui";
+const { JWT_SECRET } = require("../config/jwt");
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
 const SALT_ROUNDS = 10;
 
