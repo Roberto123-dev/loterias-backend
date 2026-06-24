@@ -40,8 +40,8 @@ services:
             postgres:
                 condition: service_healthy
         volumes:
-            - ./backend:/app
-            - /app/node_modules
+            - .:/app
+            - meu-projeto-node-modules:/app/node_modules
             - ./dados:/app/dados
         command: npm run dev
         networks:
@@ -50,6 +50,10 @@ services:
 volumes:
     postgres_data:
         name: meu-projeto-postgres-data
+        driver: local
+
+    meu-projeto-node-modules:
+        name: meu-projeto-node-modules
         driver: local
 
 networks:

@@ -20,6 +20,7 @@ const allowedOrigins = [
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
     "http://localhost:5500",
+    "http://localhost:5501",
     "http://127.0.0.1:5500",
     "http://127.0.0.1:5501",
     "https://loterias-frontend.vercel.app",
@@ -284,7 +285,7 @@ app.get("/health", async (req, res) => {
         res.status(500).json({
             status: "ERROR",
             database: "Disconnected",
-            error: error.message,
+            error: "Falha ao conectar ao banco de dados",
             timestamp: new Date(),
         });
     }
@@ -371,8 +372,7 @@ app.listen(PORT, "0.0.0.0", () => {
     console.log("🔐 JWT configurado:", !!process.env.JWT_SECRET);
 
     // Iniciar agendador de atualizações
-    const isDevelopment =
-        NODE_ENV === "development" || process.env.DOCKER_ENV === "local";
+    const isDevelopment = NODE_ENV === "development";
 
     if (isDevelopment) {
         console.log("⏰ Modo DESENVOLVIMENTO - Cron interno ativado");
