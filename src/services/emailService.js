@@ -119,4 +119,19 @@ async function enviarEmailsNovasLoterias(loterias) {
     console.log("[EMAIL] Envios concluídos.");
 }
 
-module.exports = { enviarEmailsNovasLoterias };
+async function sendEmail({ to, subject, html, text }) {
+    try {
+        await resend.emails.send({
+            from: `Roberto Loterias <${process.env.EMAIL_FROM}>`,
+            to,
+            subject,
+            html: html || "",
+            text: text || "",
+        });
+        console.log("✅ Email enviado com sucesso para:", to);
+    } catch (error) {
+        console.error("❌ ERRO AO ENVIAR EMAIL:", error.message);
+    }
+}
+
+module.exports = { enviarEmailsNovasLoterias, sendEmail };

@@ -4,7 +4,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const pool = require("../config/database");
 const crypto = require("crypto");
-const { sendEmail } = require("../config/email");
+const { sendEmail } = require("../services/emailService");
 
 const router = express.Router();
 
