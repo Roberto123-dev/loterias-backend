@@ -137,17 +137,11 @@ function formatarDados(loteriaId, dados) {
 
     const acumulou = ganhadoresFaixa1 === 0;
 
-    // ================================
-    // 💰 Valor acumulado
-    // ================================
-    const valorAcumulado = parseFloat(dados.valorAcumuladoProximoConcurso) || 0;
-
     return {
         concurso: dados.numero,
         data_sorteio: dados.dataApuracao,
         dezenas,
         acumulou,
-        valor_acumulado: valorAcumulado,
         valor_estimado_proximo:
             parseFloat(dados.valorEstimadoProximoConcurso) || 0,
         data_proximo_concurso: dados.dataProximoConcurso,

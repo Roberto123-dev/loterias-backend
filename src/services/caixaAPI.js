@@ -53,8 +53,6 @@ class CaixaAPI {
             dataProximoConcurso: dados.dataProximoConcurso,
             valorEstimadoProximoConcurso:
                 parseFloat(dados.valorEstimadoProximoConcurso) || 0,
-            valorAcumuladoProximoConcurso:
-                parseFloat(dados.valorAcumuladoProximoConcurso) || 0,
             listaRateioPremio: dados.listaRateioPremio || [],
             listaDezenas: (dados.listaDezenas || []).map(Number),
         };
