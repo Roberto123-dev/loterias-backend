@@ -317,7 +317,7 @@ router.post("/forgot-password", async (req, res) => {
             [resetToken, resetExpires, usuario.id],
         );
 
-        const resetLink = `${process.env.FRONTEND_URL}/reset-password.html?token=${resetToken}`;
+        const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password.html?token=${resetToken}`;
 
         // 📧 Enviar email
         await sendEmail({

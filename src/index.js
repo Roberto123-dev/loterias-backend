@@ -349,7 +349,7 @@ app.listen(PORT, "0.0.0.0", () => {
         console.log(`🚀 Servidor escutando na porta ${PORT}`);
         console.log(`📊 Documentação: http://localhost:${PORT}/`);
         console.log(`❤️  Health Check: http://localhost:${PORT}/health`);
-        console.log(`🔐 Painel Admin: http://localhost:${PORT}/admin.html`);
+        console.log(`🔐 Painel Admin: http://localhost:${PORT}/admin`);
     } else {
         console.log("🌍 Executando em PRODUÇÃO (Railway)");
     }
