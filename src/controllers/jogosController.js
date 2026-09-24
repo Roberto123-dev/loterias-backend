@@ -4,6 +4,7 @@
 // ============================================
 
 const pool = require("../config/database");
+const { tabelaLoteria } = require("../config/loterias");
 
 // ============================================
 // CONFIGURAÇÕES DAS LOTERIAS
@@ -113,7 +114,7 @@ const salvarJogo = async (req, res) => {
         } = req.body;
 
         // Validar loteria
-        if (!LOTERIAS_CONFIG[loteria]) {
+        if (typeof loteria !== "string" || !Object.hasOwn(LOTERIAS_CONFIG, loteria)) {
             return res.status(400).json({
                 success: false,
                 message: "Loteria inválida",
@@ -548,7 +549,7 @@ const gerarJogoAleatorio = async (req, res) => {
     try {
         const { loteria, quantidade } = req.body;
 
-        if (!LOTERIAS_CONFIG[loteria]) {
+        if (typeof loteria !== "string" || !Object.hasOwn(LOTERIAS_CONFIG, loteria)) {
             return res.status(400).json({
                 success: false,
                 message: "Loteria inválida",
@@ -839,25 +840,34 @@ const conferirJogoSimples = async (req, res) => {
         const jogo = jogoResult.rows[0];
 
         // 2. Buscar último concurso da loteria
+        const tabela = tabelaLoteria(jogo.loteria);
+        if (!tabela) {
+            console.error("Loteria inválida no jogo", jogo.id);
+            return res.status(400).json({
+                success: false,
+                message: "Loteria inválida",
+            });
+        }
+
         let concursoResult;
         try {
             concursoResult = await pool.query(
-                `SELECT concurso, dezenas 
-         FROM ${jogo.loteria} 
-         ORDER BY concurso DESC 
+                `SELECT concurso, dezenas
+         FROM ${tabela}
+         ORDER BY concurso DESC
          LIMIT 1`,
             );
         } catch (error) {
             return res.status(404).json({
                 success: false,
-                message: `Nenhum resultado disponível para ${jogo.loteria}`,
+                message: "Nenhum resultado disponível para esta loteria",
             });
         }
 
         if (concursoResult.rows.length === 0) {
             return res.status(404).json({
                 success: false,
-                message: `Nenhum resultado disponível para ${jogo.loteria}`,
+                message: "Nenhum resultado disponível para esta loteria",
             });
         }
 
@@ -992,9 +1002,16 @@ const conferirTodosSimples = async (req, res) => {
                     ];
                 } else {
                     // Loterias padrão
+                    const tabela = tabelaLoteria(jogo.loteria);
+                    if (!tabela) {
+                        console.error("Loteria inválida no jogo", jogo.id);
+                        erros++;
+                        continue;
+                    }
+
                     const result = await pool.query(`
             SELECT concurso, dezenas
-            FROM ${jogo.loteria}
+            FROM ${tabela}
             ORDER BY concurso DESC
             LIMIT 1
           `);
