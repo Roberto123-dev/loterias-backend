@@ -2,15 +2,9 @@
 const express = require("express");
 const router = express.Router();
 const { atualizarTodasLoterias } = require("../services/atualizadorLoterias");
+const { exigirCronSecret } = require("../middlewares/exigirCronSecret");
 
-router.get("/cron/atualizar", async (req, res) => {
-    if (req.query.secret !== process.env.CRON_SECRET) {
-        return res.status(401).json({
-            success: false,
-            message: "Não autorizado",
-        });
-    }
-
+router.get("/cron/atualizar", exigirCronSecret, async (req, res) => {
     try {
         console.log("⏰ ROTA /cron/atualizar CHAMADA");
 

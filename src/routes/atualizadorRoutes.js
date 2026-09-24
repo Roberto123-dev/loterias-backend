@@ -7,26 +7,13 @@ const {
     buscarConcursoCaixa,
     LOTERIAS_CONFIG,
 } = require("../services/atualizadorLoterias.js");
-
-/**
- * Middleware: exige o CRON_SECRET na query string.
- * Protege todas as rotas que disparam atualização (Caixa + banco).
- */
-function exigirSecret(req, res, next) {
-    if (req.query.secret !== process.env.CRON_SECRET) {
-        return res.status(403).json({
-            success: false,
-            message: "Acesso não autorizado",
-        });
-    }
-    next();
-}
+const { exigirCronSecret } = require("../middlewares/exigirCronSecret");
 
 /**
  * GET /api/atualizar/forcar
  * Força atualização manual (protegida + trava de concorrência).
  */
-router.get("/forcar", exigirSecret, async (req, res) => {
+router.get("/forcar", exigirCronSecret, async (req, res) => {
     console.log("🔥 ROTA /forcar CHAMADA");
 
     const resultado = await executarAtualizacaoManual("rota-manual");
@@ -40,7 +27,7 @@ router.get("/forcar", exigirSecret, async (req, res) => {
 /**
  * GET /api/atualizar/status/loterias
  * Status de cada loteria (apenas leitura).
- * Deixei ABERTA por ser só informativa — adicione `exigirSecret` se quiser fechar.
+ * Deixei ABERTA por ser só informativa — adicione `exigirCronSecret` se quiser fechar.
  */
 router.get("/status/loterias", async (req, res) => {
     try {
@@ -77,7 +64,7 @@ router.get("/status/loterias", async (req, res) => {
  * GET /api/atualizar/testar/:loteria/:concurso
  * Testa a busca de um concurso na API da Caixa (debug) — protegida.
  */
-router.get("/testar/:loteria/:concurso", exigirSecret, async (req, res) => {
+router.get("/testar/:loteria/:concurso", exigirCronSecret, async (req, res) => {
     try {
         const { loteria, concurso } = req.params;
 
@@ -114,7 +101,7 @@ router.get("/testar/:loteria/:concurso", exigirSecret, async (req, res) => {
  * GET /api/atualizar/:loteria
  * Atualiza uma loteria específica — protegida.
  */
-router.get("/:loteria", exigirSecret, async (req, res) => {
+router.get("/:loteria", exigirCronSecret, async (req, res) => {
     try {
         const { loteria } = req.params;
 
@@ -147,7 +134,7 @@ router.get("/:loteria", exigirSecret, async (req, res) => {
  * Atualiza todas as loterias — protegida + trava de concorrência.
  * Passa pelo executarAtualizacaoManual pra herdar a flag atualizacaoEmAndamento.
  */
-router.get("/", exigirSecret, async (req, res) => {
+router.get("/", exigirCronSecret, async (req, res) => {
     const resultado = await executarAtualizacaoManual("rota-manual");
 
     return res.status(resultado.success ? 200 : 500).json({
