@@ -22,12 +22,11 @@ router.get("/cron/atualizar", async (req, res) => {
             resultado,
         });
     } catch (err) {
-        console.error("❌ Erro na rota /cron/atualizar:", err.message);
+        console.error("❌ Erro na rota /cron/atualizar:", err);
 
         return res.status(500).json({
             success: false,
             message: "Erro ao executar atualização via cron",
-            error: err.message,
         });
     }
 });

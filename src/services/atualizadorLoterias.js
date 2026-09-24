@@ -283,8 +283,8 @@ async function inserirConcurso(loteriaId, dados) {
             loteria: config.nome,
         };
     } catch (error) {
-        console.error(`❌ Erro ao inserir concurso:`, error.message);
-        return { success: false, message: error.message };
+        console.error(`❌ Erro ao inserir concurso:`, error);
+        return { success: false, message: "Erro ao inserir concurso" };
     }
 }
 
@@ -379,10 +379,10 @@ async function atualizarLoteria(loteriaId) {
             totalEsperado: total,
         };
     } catch (error) {
-        console.error(`❌ Erro ao atualizar ${loteriaId}:`, error.message);
+        console.error(`❌ Erro ao atualizar ${loteriaId}:`, error);
         return {
             success: false,
-            message: error.message,
+            message: "Erro ao atualizar loteria",
             loteria: LOTERIAS_CONFIG[loteriaId]?.nome,
         };
     }

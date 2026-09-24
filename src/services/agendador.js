@@ -26,9 +26,9 @@ async function executarAtualizacaoManual(origem = "manual") {
     } catch (error) {
         console.error(
             `   ❌ [${origem.toUpperCase()}] Erro na atualização:`,
-            error.message,
+            error,
         );
-        return { success: false, message: error.message };
+        return { success: false, message: "Erro na atualização" };
     } finally {
         atualizacaoEmAndamento = false;
     }
