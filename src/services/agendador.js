@@ -9,7 +9,11 @@ async function executarAtualizacaoManual(origem = "manual") {
         console.log(
             `⚠️ [${origem.toUpperCase()}] Já existe uma atualização em andamento.`,
         );
-        return { success: false, message: "Atualização já em andamento" };
+        return {
+            success: false,
+            emAndamento: true,
+            message: "Atualização já em andamento",
+        };
     }
 
     atualizacaoEmAndamento = true;
@@ -18,11 +22,15 @@ async function executarAtualizacaoManual(origem = "manual") {
     console.log(`   Data/Hora: ${new Date().toLocaleString("pt-BR")}`);
 
     try {
-        await atualizarTodasLoterias();
+        const resultado = await atualizarTodasLoterias();
         console.log(
             `   ✅ [${origem.toUpperCase()}] Atualização concluída com sucesso!\n`,
         );
-        return { success: true, message: "Atualização concluída com sucesso" };
+        return {
+            success: true,
+            message: "Atualização concluída com sucesso",
+            resultado,
+        };
     } catch (error) {
         console.error(
             `   ❌ [${origem.toUpperCase()}] Erro na atualização:`,

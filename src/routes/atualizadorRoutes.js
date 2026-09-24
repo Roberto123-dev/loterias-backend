@@ -16,12 +16,23 @@ const { exigirCronSecret } = require("../middlewares/exigirCronSecret");
 router.get("/forcar", exigirCronSecret, async (req, res) => {
     console.log("🔥 ROTA /forcar CHAMADA");
 
-    const resultado = await executarAtualizacaoManual("rota-manual");
+    try {
+        const resultado = await executarAtualizacaoManual("rota-manual");
 
-    return res.status(resultado.success ? 200 : 500).json({
-        success: resultado.success,
-        message: resultado.message,
-    });
+        // "Já em andamento" responde 200 com success:false
+        return res
+            .status(resultado.success || resultado.emAndamento ? 200 : 500)
+            .json({
+                success: resultado.success,
+                message: resultado.message,
+            });
+    } catch (error) {
+        console.error("❌ Erro na rota /forcar:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Erro na atualização",
+        });
+    }
 });
 
 /**
@@ -135,12 +146,23 @@ router.get("/:loteria", exigirCronSecret, async (req, res) => {
  * Passa pelo executarAtualizacaoManual pra herdar a flag atualizacaoEmAndamento.
  */
 router.get("/", exigirCronSecret, async (req, res) => {
-    const resultado = await executarAtualizacaoManual("rota-manual");
+    try {
+        const resultado = await executarAtualizacaoManual("rota-manual");
 
-    return res.status(resultado.success ? 200 : 500).json({
-        success: resultado.success,
-        message: resultado.message,
-    });
+        // "Já em andamento" responde 200 com success:false
+        return res
+            .status(resultado.success || resultado.emAndamento ? 200 : 500)
+            .json({
+                success: resultado.success,
+                message: resultado.message,
+            });
+    } catch (error) {
+        console.error("❌ Erro na rota /api/atualizar:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Erro na atualização",
+        });
+    }
 });
 
 module.exports = router;
