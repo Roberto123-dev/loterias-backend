@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const pool = require("../config/database");
 const crypto = require("crypto");
 const { sendEmail } = require("../services/emailService");
+const { escapeHtml } = require("../utils/escapeHtml");
 
 const router = express.Router();
 
@@ -281,7 +282,7 @@ router.post("/forgot-password", async (req, res) => {
     try {
         const { email } = req.body;
 
-        if (!email) {
+        if (typeof email !== "string" || !email) {
             return res.status(400).json({
                 success: false,
                 message: "Email é obrigatório",
@@ -324,7 +325,7 @@ router.post("/forgot-password", async (req, res) => {
             to: usuario.email,
             subject: "Redefinição de senha - Roberto Loterias",
             html: `
-        <h2>Olá, ${usuario.nome}</h2>
+        <h2>Olá, ${escapeHtml(usuario.nome)}</h2>
         <p>Recebemos uma solicitação para redefinir sua senha.</p>
         <p>Clique no botão abaixo para continuar:</p>
         <p>
