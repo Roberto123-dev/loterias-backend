@@ -799,7 +799,7 @@ const salvarJogosLote = async (req, res) => {
         console.error("❌ Erro ao salvar jogos em lote:", error);
         res.status(500).json({
             success: false,
-            message: "Erro ao salvar jogos: " + error.message,
+            message: "Erro ao salvar jogos",
         });
     }
 };
@@ -940,7 +940,7 @@ const conferirJogoSimples = async (req, res) => {
         console.error("Erro ao conferir jogo:", error);
         res.status(500).json({
             success: false,
-            message: "Erro ao conferir jogo: " + error.message,
+            message: "Erro ao conferir jogo",
         });
     }
 };
@@ -1130,7 +1130,7 @@ const conferirTodosSimples = async (req, res) => {
         console.error("❌ Erro geral ao conferir todos:", error);
         res.status(500).json({
             success: false,
-            message: "Erro ao conferir jogos: " + error.message,
+            message: "Erro ao conferir jogos",
         });
     }
 };
