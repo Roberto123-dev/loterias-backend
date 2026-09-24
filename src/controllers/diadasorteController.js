@@ -46,7 +46,6 @@ exports.listarTodos = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Erro ao buscar resultados",
-            error: error.message,
         });
     }
 };
@@ -76,7 +75,6 @@ exports.buscarUltimo = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Erro ao buscar último concurso",
-            error: error.message,
         });
     }
 };
@@ -109,7 +107,6 @@ exports.buscarPorConcurso = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Erro ao buscar concurso",
-            error: error.message,
         });
     }
 };
@@ -140,7 +137,6 @@ exports.buscarPorNumero = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Erro ao buscar por número",
-            error: error.message,
         });
     }
 };
@@ -172,7 +168,6 @@ exports.buscarPorMes = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Erro ao buscar por mês",
-            error: error.message,
         });
     }
 };
@@ -218,7 +213,6 @@ exports.estatisticas = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Erro ao calcular estatísticas",
-            error: error.message,
         });
     }
 };
@@ -252,7 +246,6 @@ exports.criar = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Erro ao criar concurso",
-            error: error.message,
         });
     }
 };
@@ -286,7 +279,6 @@ exports.deletar = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Erro ao deletar concurso",
-            error: error.message,
         });
     }
 };
