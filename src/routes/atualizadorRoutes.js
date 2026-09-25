@@ -4,7 +4,7 @@ const router = express.Router();
 const { executarAtualizacaoManual } = require("../services/agendador.js");
 const {
     atualizarLoteria,
-    buscarConcursoCaixa,
+    buscarConcurso,
     LOTERIAS_CONFIG,
 } = require("../services/atualizadorLoterias.js");
 const { exigirCronSecret } = require("../middlewares/exigirCronSecret");
@@ -73,7 +73,7 @@ router.get("/status/loterias", async (req, res) => {
 
 /**
  * GET /api/atualizar/testar/:loteria/:concurso
- * Testa a busca de um concurso na API da Caixa (debug) — protegida.
+ * Testa a busca de um concurso nas fontes de resultados (debug) — protegida.
  */
 router.get("/testar/:loteria/:concurso", exigirCronSecret, async (req, res) => {
     try {
@@ -86,12 +86,12 @@ router.get("/testar/:loteria/:concurso", exigirCronSecret, async (req, res) => {
             });
         }
 
-        const dados = await buscarConcursoCaixa(loteria, concurso);
+        const dados = await buscarConcurso(loteria, concurso);
 
         if (!dados) {
             return res.status(404).json({
                 success: false,
-                message: "Concurso não encontrado na API da Caixa",
+                message: "Concurso não encontrado nas fontes de resultados",
             });
         }
 
@@ -126,9 +126,11 @@ router.get("/:loteria", exigirCronSecret, async (req, res) => {
 
         const resultado = await atualizarLoteria(loteria);
 
-        res.json({
-            success: true,
-            message: "Atualização concluída",
+        res.status(resultado.success ? 200 : 502).json({
+            success: resultado.success,
+            message: resultado.success
+                ? "Atualização concluída"
+                : "Falha ao atualizar loteria",
             data: resultado,
         });
     } catch (error) {

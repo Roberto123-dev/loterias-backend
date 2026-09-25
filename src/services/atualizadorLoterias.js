@@ -1,6 +1,7 @@
 const { enviarEmailsNovasLoterias } = require("./emailService");
 const pool = require("../config/database");
 const CaixaAPI = require("./caixaAPI");
+const { ResultadosAPI, resultadosApiAtiva } = require("./resultadosAPI");
 const resultadosCache = require("./resultadosCache");
 
 const EMOJIS = {
@@ -85,28 +86,57 @@ async function buscarUltimoConcurso(tabela) {
 }
 
 /**
- * Buscar dados de um concurso específico na API da Caixa
+ * Buscar um concurso (ou o último, sem número) em uma fonte, com novas tentativas
  */
-async function buscarConcursoCaixa(loteriaId, numeroConcurso = null) {
-    const api = new CaixaAPI(loteriaId);
-
-    for (let tentativa = 1; tentativa <= 3; tentativa++) {
+async function buscarComTentativas(api, fonte, loteriaId, numeroConcurso, tentativas) {
+    for (let tentativa = 1; tentativa <= tentativas; tentativa++) {
         const data = numeroConcurso
             ? await api.buscarConcurso(numeroConcurso)
             : await api.buscarUltimo();
 
-        if (data) return data;
+        if (data) {
+            console.log(`   📡 Fonte: ${fonte} (${loteriaId} concurso ${data.numero})`);
+            return data;
+        }
 
         console.log(
-            `⚠️ Tentativa ${tentativa}/3 falhou para ${loteriaId}${
+            `⚠️ ${fonte}: tentativa ${tentativa}/${tentativas} falhou para ${loteriaId}${
                 numeroConcurso ? ` concurso ${numeroConcurso}` : ""
             }`,
         );
 
-        await new Promise((resolve) => setTimeout(resolve, tentativa * 1500));
+        if (tentativa < tentativas) {
+            await new Promise((resolve) => setTimeout(resolve, tentativa * 1500));
+        }
     }
 
     return null;
+}
+
+/**
+ * Buscar dados de um concurso: resultados-loterias-api primeiro, Caixa direta como reserva
+ */
+async function buscarConcurso(loteriaId, numeroConcurso = null) {
+    if (resultadosApiAtiva()) {
+        const data = await buscarComTentativas(
+            new ResultadosAPI(loteriaId),
+            "ResultadosAPI",
+            loteriaId,
+            numeroConcurso,
+            2,
+        );
+        if (data) return data;
+
+        console.log(`↪️ ${loteriaId}: caindo para a Caixa direta`);
+    }
+
+    return buscarComTentativas(
+        new CaixaAPI(loteriaId),
+        "Caixa",
+        loteriaId,
+        numeroConcurso,
+        3,
+    );
 }
 
 /**
@@ -302,19 +332,19 @@ async function atualizarLoteria(loteriaId) {
         console.log(`   📊 Último no banco: ${ultimoBanco}`);
 
         // 2. Buscar último concurso da API (sem número = último)
-        const ultimoCaixa = await buscarConcursoCaixa(loteriaId);
+        const ultimoCaixa = await buscarConcurso(loteriaId);
 
         if (!ultimoCaixa) {
-            console.log(`   ❌ Erro ao buscar API da Caixa`);
+            console.log(`   ❌ Erro ao buscar resultados (todas as fontes)`);
             return {
                 success: false,
-                message: "Erro ao buscar API da Caixa",
+                message: "Erro ao buscar resultados",
                 loteria: config.nome,
             };
         }
 
         const numeroUltimoCaixa = ultimoCaixa.numero;
-        console.log(`   🌐 Último na Caixa: ${numeroUltimoCaixa}`);
+        console.log(`   🌐 Último disponível: ${numeroUltimoCaixa}`);
 
         // Sempre reprocessar o último concurso
         if (numeroUltimoCaixa <= ultimoBanco) {
@@ -322,11 +352,11 @@ async function atualizarLoteria(loteriaId) {
                 `🔄 Revalidando último concurso ${numeroUltimoCaixa}...`,
             );
 
-            await inserirConcurso(loteriaId, ultimoCaixa);
+            const revalidacao = await inserirConcurso(loteriaId, ultimoCaixa);
 
             return {
-                success: true,
-                message: "Revalidado",
+                success: revalidacao.success,
+                message: revalidacao.success ? "Revalidado" : "Erro ao revalidar",
                 novos: 0,
                 loteria: config.nome,
             };
@@ -346,7 +376,7 @@ async function atualizarLoteria(loteriaId) {
             const dados =
                 i === numeroUltimoCaixa
                     ? ultimoCaixa // ← USA OS DADOS JÁ BUSCADOS!
-                    : await buscarConcursoCaixa(loteriaId, i); // ← SÓ BUSCA SE NÃO FOR O ÚLTIMO
+                    : await buscarConcurso(loteriaId, i); // ← SÓ BUSCA SE NÃO FOR O ÚLTIMO
 
             if (dados && dados.numero === i) {
                 const resultado = await inserirConcurso(loteriaId, dados);
@@ -371,8 +401,9 @@ async function atualizarLoteria(loteriaId) {
             `   ✅ ${config.nome}: ${novos.length} de ${total} concurso(s) inserido(s)!`,
         );
 
+        // Havia concursos faltantes e nenhum entrou: é falha, não "0 novos"
         return {
-            success: true,
+            success: novos.length > 0,
             loteria: config.nome,
             novos: novos.length,
             concursos: novos,
@@ -396,8 +427,9 @@ async function atualizarTodasLoterias() {
 
     const resultados = {};
     let totalNovos = 0;
+    const ids = Object.keys(LOTERIAS_CONFIG);
 
-    for (const loteriaId of Object.keys(LOTERIAS_CONFIG)) {
+    for (const loteriaId of ids) {
         const resultado = await atualizarLoteria(loteriaId);
         resultados[loteriaId] = resultado;
 
@@ -407,6 +439,15 @@ async function atualizarTodasLoterias() {
 
         // Aguardar 2 segundos entre loterias
         await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+
+    const falhas = ids.filter((id) => !resultados[id]?.success);
+    const todasFalharam = falhas.length === ids.length;
+
+    if (todasFalharam) {
+        console.error(`❌ Todas as ${ids.length} loterias falharam`);
+    } else if (falhas.length > 0) {
+        console.warn(`⚠️ Loterias com falha: ${falhas.join(", ")}`);
     }
 
     console.log(
@@ -435,7 +476,9 @@ async function atualizarTodasLoterias() {
     }
 
     return {
-        success: true,
+        success: !todasFalharam,
+        parcial: falhas.length > 0 && !todasFalharam,
+        falhas,
         timestamp: new Date(),
         totalNovos,
         detalhes: resultados,
@@ -445,6 +488,6 @@ async function atualizarTodasLoterias() {
 module.exports = {
     atualizarLoteria,
     atualizarTodasLoterias,
-    buscarConcursoCaixa,
+    buscarConcurso,
     LOTERIAS_CONFIG,
 };
