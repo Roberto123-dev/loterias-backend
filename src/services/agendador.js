@@ -23,6 +23,18 @@ async function executarAtualizacaoManual(origem = "manual") {
 
     try {
         const resultado = await atualizarTodasLoterias();
+
+        if (!resultado.success) {
+            console.error(
+                `   ❌ [${origem.toUpperCase()}] Nenhuma loteria foi atualizada`,
+            );
+            return {
+                success: false,
+                message: "Nenhuma loteria foi atualizada",
+                resultado,
+            };
+        }
+
         console.log(
             `   ✅ [${origem.toUpperCase()}] Atualização concluída com sucesso!\n`,
         );

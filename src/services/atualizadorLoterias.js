@@ -322,11 +322,11 @@ async function atualizarLoteria(loteriaId) {
                 `🔄 Revalidando último concurso ${numeroUltimoCaixa}...`,
             );
 
-            await inserirConcurso(loteriaId, ultimoCaixa);
+            const revalidacao = await inserirConcurso(loteriaId, ultimoCaixa);
 
             return {
-                success: true,
-                message: "Revalidado",
+                success: revalidacao.success,
+                message: revalidacao.success ? "Revalidado" : "Erro ao revalidar",
                 novos: 0,
                 loteria: config.nome,
             };
@@ -371,8 +371,9 @@ async function atualizarLoteria(loteriaId) {
             `   ✅ ${config.nome}: ${novos.length} de ${total} concurso(s) inserido(s)!`,
         );
 
+        // Havia concursos faltantes e nenhum entrou: é falha, não "0 novos"
         return {
-            success: true,
+            success: novos.length > 0,
             loteria: config.nome,
             novos: novos.length,
             concursos: novos,
@@ -396,8 +397,9 @@ async function atualizarTodasLoterias() {
 
     const resultados = {};
     let totalNovos = 0;
+    const ids = Object.keys(LOTERIAS_CONFIG);
 
-    for (const loteriaId of Object.keys(LOTERIAS_CONFIG)) {
+    for (const loteriaId of ids) {
         const resultado = await atualizarLoteria(loteriaId);
         resultados[loteriaId] = resultado;
 
@@ -407,6 +409,15 @@ async function atualizarTodasLoterias() {
 
         // Aguardar 2 segundos entre loterias
         await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+
+    const falhas = ids.filter((id) => !resultados[id]?.success);
+    const todasFalharam = falhas.length === ids.length;
+
+    if (todasFalharam) {
+        console.error(`❌ Todas as ${ids.length} loterias falharam`);
+    } else if (falhas.length > 0) {
+        console.warn(`⚠️ Loterias com falha: ${falhas.join(", ")}`);
     }
 
     console.log(
@@ -435,7 +446,9 @@ async function atualizarTodasLoterias() {
     }
 
     return {
-        success: true,
+        success: !todasFalharam,
+        parcial: falhas.length > 0 && !todasFalharam,
+        falhas,
         timestamp: new Date(),
         totalNovos,
         detalhes: resultados,

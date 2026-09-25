@@ -126,9 +126,11 @@ router.get("/:loteria", exigirCronSecret, async (req, res) => {
 
         const resultado = await atualizarLoteria(loteria);
 
-        res.json({
-            success: true,
-            message: "Atualização concluída",
+        res.status(resultado.success ? 200 : 502).json({
+            success: resultado.success,
+            message: resultado.success
+                ? "Atualização concluída"
+                : "Falha ao atualizar loteria",
             data: resultado,
         });
     } catch (error) {
