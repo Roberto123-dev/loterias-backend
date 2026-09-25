@@ -1,18 +1,6 @@
 // meus-projetos-principais\meu-projeto\backend\src\controllers\analiseController.js
 const pool = require("../config/database");
-
-// Tabelas de loteria permitidas — protege contra SQL injection por nome de tabela.
-// O valor do cliente vira apenas uma CHAVE de busca; só estes nomes podem ir pra query.
-const TABELAS_LOTERIA = {
-    lotofacil: "lotofacil",
-    megasena: "megasena",
-    quina: "quina",
-    lotomania: "lotomania",
-    duplasena: "duplasena",
-    diadasorte: "diadasorte",
-    timemania: "timemania",
-    maismilionaria: "maismilionaria",
-};
+const { tabelaLoteria } = require("../config/loterias");
 
 // =====================================================
 // 🔢 ANÁLISE DE COMBINAÇÕES
@@ -31,7 +19,7 @@ const analisarCombinacoes = async (req, res) => {
     }
 
     // Resolve a tabela pela whitelist — nunca usa o valor do cliente direto
-    const tabela = TABELAS_LOTERIA[loteria];
+    const tabela = tabelaLoteria(loteria);
     if (!tabela) {
         return res.status(400).json({
             success: false,
@@ -151,7 +139,7 @@ const analisarDezenas = async (req, res) => {
         });
     }
 
-    const tabela = TABELAS_LOTERIA[loteria];
+    const tabela = tabelaLoteria(loteria);
     if (!tabela) {
         return res.status(400).json({
             success: false,

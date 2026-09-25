@@ -7,8 +7,7 @@ const errorHandler = (err, req, res, next) => {
     if (err.code === "23505") {
         return res.status(409).json({
             success: false,
-            message: "Registro duplicado",
-            error: err.detail,
+            message: "Registro já existe",
         });
     }
 
@@ -24,7 +23,6 @@ const errorHandler = (err, req, res, next) => {
     res.status(500).json({
         success: false,
         message: "Erro interno do servidor",
-        error: process.env.NODE_ENV === "development" ? err.message : undefined,
     });
 };
 

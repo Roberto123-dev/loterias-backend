@@ -5,6 +5,12 @@ const jwt = require("jsonwebtoken");
 const pool = require("../config/database");
 const crypto = require("crypto");
 const { sendEmail } = require("../services/emailService");
+const { escapeHtml } = require("../utils/escapeHtml");
+const {
+    limiteLogin,
+    limiteRegistro,
+    limiteForgot,
+} = require("../middlewares/rateLimit");
 
 const router = express.Router();
 
@@ -13,24 +19,51 @@ const { JWT_SECRET } = require("../config/jwt");
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
 const SALT_ROUNDS = 10;
 
+// Hash descartável: o /login roda bcrypt mesmo quando o e-mail não existe, para
+// que o tempo de resposta não revele quais e-mails estão cadastrados.
+const HASH_FALSO = bcrypt.hashSync("usuario-inexistente", SALT_ROUNDS);
+
+// Nome: 2 a 100 caracteres, sem < > nem caracteres de controle
+const NOME_INVALIDO = /[<>\u0000-\u001F\u007F]/;
+// Email: formato básico, sem espaços nem < >
+const EMAIL_REGEX = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
+
 // ==========================================
 // REGISTRO DE NOVO USUÁRIO
 // ==========================================
-router.post("/registro", async (req, res) => {
+router.post("/registro", limiteRegistro, async (req, res) => {
     try {
         const { nome, email, senha } = req.body;
 
         // Validar dados
-        if (!nome || !email || !senha) {
+        if (
+            typeof nome !== "string" ||
+            typeof email !== "string" ||
+            typeof senha !== "string" ||
+            !nome ||
+            !email ||
+            !senha
+        ) {
             return res.status(400).json({
                 success: false,
                 message: "Nome, email e senha são obrigatórios",
             });
         }
 
+        const nomeLimpo = nome.trim();
+        if (
+            nomeLimpo.length < 2 ||
+            nomeLimpo.length > 100 ||
+            NOME_INVALIDO.test(nomeLimpo)
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Nome inválido",
+            });
+        }
+
         // Validar email
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
+        if (email.length > 254 || !EMAIL_REGEX.test(email)) {
             return res.status(400).json({
                 success: false,
                 message: "Email inválido",
@@ -64,7 +97,7 @@ router.post("/registro", async (req, res) => {
         // Inserir usuário
         const result = await pool.query(
             "INSERT INTO usuarios (nome, email, senha) VALUES ($1, $2, $3) RETURNING id, nome, email, created_at",
-            [nome, email.toLowerCase(), senhaHash],
+            [nomeLimpo, email.toLowerCase(), senhaHash],
         );
 
         const usuario = result.rows[0];
@@ -105,12 +138,17 @@ router.post("/registro", async (req, res) => {
 // ==========================================
 // LOGIN
 // ==========================================
-router.post("/login", async (req, res) => {
+router.post("/login", limiteLogin, async (req, res) => {
     try {
         const { email, senha } = req.body;
 
         // Validar dados
-        if (!email || !senha) {
+        if (
+            typeof email !== "string" ||
+            typeof senha !== "string" ||
+            !email ||
+            !senha
+        ) {
             return res.status(400).json({
                 success: false,
                 message: "Email e senha são obrigatórios",
@@ -123,19 +161,15 @@ router.post("/login", async (req, res) => {
             [email.toLowerCase()],
         );
 
-        if (result.rows.length === 0) {
-            return res.status(401).json({
-                success: false,
-                message: "Email ou senha incorretos",
-            });
-        }
-
         const usuario = result.rows[0];
 
-        // Verificar senha
-        const senhaValida = await bcrypt.compare(senha, usuario.senha);
+        // Sempre roda o bcrypt, mesmo sem usuário (tempo constante)
+        const senhaValida = await bcrypt.compare(
+            senha,
+            usuario ? usuario.senha : HASH_FALSO,
+        );
 
-        if (!senhaValida) {
+        if (!usuario || !senhaValida) {
             return res.status(401).json({
                 success: false,
                 message: "Email ou senha incorretos",
@@ -277,11 +311,11 @@ router.get("/perfil", async (req, res) => {
 // ==========================================
 // FORGOT PASSWORD
 // ==========================================
-router.post("/forgot-password", async (req, res) => {
+router.post("/forgot-password", limiteForgot, async (req, res) => {
     try {
         const { email } = req.body;
 
-        if (!email) {
+        if (typeof email !== "string" || !email) {
             return res.status(400).json({
                 success: false,
                 message: "Email é obrigatório",
@@ -319,12 +353,14 @@ router.post("/forgot-password", async (req, res) => {
 
         const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password.html?token=${resetToken}`;
 
-        // 📧 Enviar email
-        await sendEmail({
+        // 📧 Enviar email sem await: esperar a Resend deixaria a resposta mais lenta
+        // só quando o e-mail existe, revelando quais estão cadastrados.
+        // O sendEmail já captura e loga os próprios erros.
+        sendEmail({
             to: usuario.email,
             subject: "Redefinição de senha - Roberto Loterias",
             html: `
-        <h2>Olá, ${usuario.nome}</h2>
+        <h2>Olá, ${escapeHtml(usuario.nome)}</h2>
         <p>Recebemos uma solicitação para redefinir sua senha.</p>
         <p>Clique no botão abaixo para continuar:</p>
         <p>
@@ -337,7 +373,7 @@ router.post("/forgot-password", async (req, res) => {
         <p>Se não foi você, ignore este email.</p>
       `,
             text: `Redefina sua senha: ${resetLink}`,
-        });
+        }).catch((err) => console.error("Erro ao enviar email de reset:", err));
 
         res.json({
             success: true,

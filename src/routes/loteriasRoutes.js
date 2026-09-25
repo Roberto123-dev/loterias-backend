@@ -84,7 +84,6 @@ router.get("/:loteria/resultado/:concurso", async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Erro ao buscar resultado do concurso",
-            error: error.message,
         });
     }
 });
@@ -157,7 +156,6 @@ router.get("/:loteria/ultimo", async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Erro ao buscar último concurso",
-            error: error.message,
         });
     }
 });
@@ -207,7 +205,6 @@ router.get("/:loteria/ultimos/:quantidade", async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Erro ao buscar concursos",
-            error: error.message,
         });
     }
 });
