@@ -6,6 +6,11 @@ const pool = require("../config/database");
 const crypto = require("crypto");
 const { sendEmail } = require("../services/emailService");
 const { escapeHtml } = require("../utils/escapeHtml");
+const {
+    limiteLogin,
+    limiteRegistro,
+    limiteForgot,
+} = require("../middlewares/rateLimit");
 
 const router = express.Router();
 
@@ -26,7 +31,7 @@ const EMAIL_REGEX = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
 // ==========================================
 // REGISTRO DE NOVO USUÁRIO
 // ==========================================
-router.post("/registro", async (req, res) => {
+router.post("/registro", limiteRegistro, async (req, res) => {
     try {
         const { nome, email, senha } = req.body;
 
@@ -133,7 +138,7 @@ router.post("/registro", async (req, res) => {
 // ==========================================
 // LOGIN
 // ==========================================
-router.post("/login", async (req, res) => {
+router.post("/login", limiteLogin, async (req, res) => {
     try {
         const { email, senha } = req.body;
 
@@ -306,7 +311,7 @@ router.get("/perfil", async (req, res) => {
 // ==========================================
 // FORGOT PASSWORD
 // ==========================================
-router.post("/forgot-password", async (req, res) => {
+router.post("/forgot-password", limiteForgot, async (req, res) => {
     try {
         const { email } = req.body;
 

@@ -2,6 +2,10 @@ require("dotenv").config(); // No topo do arquivo
 const express = require("express");
 const cors = require("cors"); // ⭐ ADICIONAR ESTA LINHA
 const app = express();
+
+// Railway: 1 proxy (edge) na frente do app. Nunca `true` — permitiria forjar o IP
+// pelo X-Forwarded-For e burlar o rate limit. Em dev não há proxy.
+if (process.env.NODE_ENV === "production") app.set("trust proxy", 1);
 const pool = require("./config/database");
 const errorHandler = require("./middlewares/errorHandler");
 const resultadosRoutes = require("./routes/resultadosRoutes");
