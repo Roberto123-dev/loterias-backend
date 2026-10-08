@@ -40,4 +40,7 @@ router.get("/historico", adminController.getHistorico);
 // Alertas de expiração
 router.get("/alertas", adminController.getAlertas);
 
+// Bancas Parceiras: cliques por banca
+router.get("/bancas/cliques", adminController.getCliquesBancas);
+
 module.exports = router;

@@ -92,6 +92,7 @@ const planosRoutes = require("./routes/planosRoutes");
 // IMPORTAR ROTAS ADMIN
 // ============================================
 const adminRoutes = require("./routes/adminRoutes");
+const bancasRoutes = require("./routes/bancasRoutes");
 
 // ============================================
 // IMPORTAR ROTAS DE ATUALIZAÇÃO E AGENDADOR
@@ -109,8 +110,10 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(express.static("src/public"));
 
 // Middleware de log
+// O clique em banca parceira é registrado sem a banca no caminho (privacidade).
 app.use((req, res, next) => {
-    console.log(`${req.method} ${req.path}`);
+    const caminho = req.path.replace(/^\/api\/bancas\/[^/]+\/clique$/, "/api/bancas/:id/clique");
+    console.log(`${req.method} ${caminho}`);
     next();
 });
 
@@ -136,6 +139,7 @@ app.use("/api/planos", planosRoutes);
 // ROTAS ADMIN
 // ============================================
 app.use("/api/admin", adminRoutes);
+app.use("/api/bancas", bancasRoutes);
 
 // ============================================
 // ROTAS DE ATUALIZAÇÃO

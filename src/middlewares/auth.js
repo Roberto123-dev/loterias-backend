@@ -51,8 +51,9 @@ const verificarToken = async (req, res, next) => {
             role: usuario.role,
         };
 
-        // Sem nome/e-mail no log (dado pessoal)
-        console.log(`✅ [AUTH] Usuário ${usuario.id}`);
+        // Sem nome/e-mail no log (dado pessoal). Rotas marcadas com req.semLogDeUsuario
+        // (ex.: clique em banca parceira) não registram nem o id.
+        if (!req.semLogDeUsuario) console.log(`✅ [AUTH] Usuário ${usuario.id}`);
 
         return limiteGeralUsuario(req, res, next);
     } catch (error) {
