@@ -51,6 +51,9 @@ class CaixaAPI {
             numero: dados.numero,
             dataApuracao: dados.dataApuracao,
             dataProximoConcurso: dados.dataProximoConcurso,
+            // Campo oficial da Caixa (boolean); ausente em algumas respostas
+            acumulado:
+                typeof dados.acumulado === "boolean" ? dados.acumulado : null,
             valorEstimadoProximoConcurso:
                 parseFloat(dados.valorEstimadoProximoConcurso) || 0,
             listaRateioPremio: dados.listaRateioPremio || [],

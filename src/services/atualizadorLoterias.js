@@ -140,6 +140,49 @@ async function buscarConcurso(loteriaId, numeroConcurso = null) {
 }
 
 /**
+ * "dd/mm/aaaa" (formato da Caixa) → "aaaa-mm-dd" (DATE no Postgres); inválido → null
+ */
+function converterData(dataBR) {
+    const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(dataBR || "").trim());
+    return m ? `${m[3]}-${m[2]}-${m[1]}` : null;
+}
+
+/**
+ * Acumulou? true/false, ou null quando ainda não há rateio ("aguardando rateio").
+ * Fonte: campo oficial `acumulado` da Caixa; na falta dele, nº de ganhadores da faixa 1.
+ * Rateio vazio nunca vira "acumulou".
+ */
+function calcularAcumulou(dados) {
+    const rateio = Array.isArray(dados.listaRateioPremio)
+        ? dados.listaRateioPremio
+        : [];
+    if (rateio.length === 0) return null;
+
+    if (typeof dados.acumulado === "boolean") return dados.acumulado;
+
+    const faixa1 = rateio.find((f) => f.faixa === 1) || rateio[0];
+    return typeof faixa1?.numeroDeGanhadores === "number"
+        ? faixa1.numeroDeGanhadores === 0
+        : null;
+}
+
+/**
+ * Valor gravado de `acumulou` para o e-mail (null se não houver ou der erro)
+ */
+async function buscarAcumulou(tabela, concurso) {
+    try {
+        const { rows } = await pool.query(
+            `SELECT acumulou FROM ${tabela} WHERE concurso = $1`,
+            [concurso],
+        );
+        return rows[0]?.acumulou ?? null;
+    } catch (error) {
+        console.error("Erro ao buscar acumulou para o e-mail:", error);
+        return null;
+    }
+}
+
+/**
  * Formatar dados do concurso para inserção no banco
  */
 function formatarDados(loteriaId, dados) {
@@ -159,22 +202,14 @@ function formatarDados(loteriaId, dados) {
         dezenas = (dados.listaDezenas || []).map(Number);
     }
 
-    // ================================
-    // 🏆 Verificar se teve ganhador na faixa principal
-    // ================================
-    const ganhadoresFaixa1 =
-        dados.listaRateioPremio?.[0]?.numeroDeGanhadores ?? 0;
-
-    const acumulou = ganhadoresFaixa1 === 0;
-
     return {
         concurso: dados.numero,
-        data_sorteio: dados.dataApuracao,
+        data_sorteio: converterData(dados.dataApuracao),
         dezenas,
-        acumulou,
+        acumulou: calcularAcumulou(dados),
         valor_estimado_proximo:
             parseFloat(dados.valorEstimadoProximoConcurso) || 0,
-        data_proximo_concurso: dados.dataProximoConcurso,
+        data_proximo_concurso: converterData(dados.dataProximoConcurso),
         premiacoes: dados.listaRateioPremio || [], // 👈 ADICIONE ISSO
     };
 }
@@ -194,23 +229,28 @@ async function inserirConcurso(loteriaId, dados) {
         );
 
         if (existe.rows.length > 0) {
-            // 🔄 Atualizar acumulou se já existir
+            // 🔄 Revalidar se já existir. COALESCE: um NULL da fonte (ex.: rateio
+            // ainda não publicado) não apaga um valor que já conhecemos.
             await pool.query(
                 `UPDATE ${config.tabela}
-          SET acumulou = $1,
+          SET acumulou = COALESCE($1, acumulou),
               valor_estimado_proximo = $2,
-              premiacoes = $3
+              premiacoes = $3,
+              data_sorteio = COALESCE($5, data_sorteio),
+              data_proximo_concurso = COALESCE($6, data_proximo_concurso)
           WHERE concurso = $4`,
                 [
                     dadosFormatados.acumulou, // $1
                     dadosFormatados.valor_estimado_proximo, // $2
                     JSON.stringify(dadosFormatados.premiacoes), // $3
                     dadosFormatados.concurso, // $4
+                    dadosFormatados.data_sorteio, // $5
+                    dadosFormatados.data_proximo_concurso, // $6
                 ],
             );
 
             console.log(
-                `🔄 Concurso ${dadosFormatados.concurso} de ${config.nome} atualizado (acumulou + premiacoes)!`,
+                `🔄 Concurso ${dadosFormatados.concurso} de ${config.nome} atualizado (acumulou + premiacoes + datas)!`,
             );
 
             return { success: true, updated: true };
@@ -225,8 +265,8 @@ async function inserirConcurso(loteriaId, dados) {
 
             await pool.query(
                 `INSERT INTO ${config.tabela} 
-        (concurso, dezenas_1, dezenas_2, acumulou, valor_estimado_proximo, premiacoes, created_at) 
-         VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+        (concurso, dezenas_1, dezenas_2, acumulou, valor_estimado_proximo, premiacoes, data_sorteio, data_proximo_concurso, created_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
                 [
                     dadosFormatados.concurso,
                     sorteio1,
@@ -234,6 +274,8 @@ async function inserirConcurso(loteriaId, dados) {
                     dadosFormatados.acumulou,
                     dadosFormatados.valor_estimado_proximo,
                     JSON.stringify(dadosFormatados.premiacoes),
+                    dadosFormatados.data_sorteio,
+                    dadosFormatados.data_proximo_concurso,
                 ],
             );
         } else if (loteriaId === "maismilionaria") {
@@ -243,8 +285,8 @@ async function inserirConcurso(loteriaId, dados) {
 
             await pool.query(
                 `INSERT INTO ${config.tabela} 
-        (concurso, dezenas, trevos, acumulou, valor_estimado_proximo, premiacoes, created_at) 
-         VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+        (concurso, dezenas, trevos, acumulou, valor_estimado_proximo, premiacoes, data_sorteio, data_proximo_concurso, created_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
                 [
                     dadosFormatados.concurso,
                     numeros,
@@ -252,6 +294,8 @@ async function inserirConcurso(loteriaId, dados) {
                     dadosFormatados.acumulou,
                     dadosFormatados.valor_estimado_proximo,
                     JSON.stringify(dadosFormatados.premiacoes),
+                    dadosFormatados.data_sorteio,
+                    dadosFormatados.data_proximo_concurso,
                 ],
             );
         } else if (loteriaId === "timemania") {
@@ -260,8 +304,8 @@ async function inserirConcurso(loteriaId, dados) {
 
             await pool.query(
                 `INSERT INTO ${config.tabela} 
-        (concurso, dezenas, time_coracao, acumulou, valor_estimado_proximo, premiacoes, created_at) 
-         VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+        (concurso, dezenas, time_coracao, acumulou, valor_estimado_proximo, premiacoes, data_sorteio, data_proximo_concurso, created_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
                 [
                     dadosFormatados.concurso,
                     dadosFormatados.dezenas,
@@ -269,6 +313,8 @@ async function inserirConcurso(loteriaId, dados) {
                     dadosFormatados.acumulou,
                     dadosFormatados.valor_estimado_proximo,
                     JSON.stringify(dadosFormatados.premiacoes),
+                    dadosFormatados.data_sorteio,
+                    dadosFormatados.data_proximo_concurso,
                 ],
             );
         } else if (loteriaId === "diadesorte") {
@@ -277,8 +323,8 @@ async function inserirConcurso(loteriaId, dados) {
 
             await pool.query(
                 `INSERT INTO ${config.tabela} 
-        (concurso, dezenas, mes_sorte, acumulou, valor_estimado_proximo, premiacoes, created_at) 
-         VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+        (concurso, dezenas, mes_sorte, acumulou, valor_estimado_proximo, premiacoes, data_sorteio, data_proximo_concurso, created_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
                 [
                     dadosFormatados.concurso,
                     dadosFormatados.dezenas,
@@ -286,20 +332,24 @@ async function inserirConcurso(loteriaId, dados) {
                     dadosFormatados.acumulou,
                     dadosFormatados.valor_estimado_proximo,
                     JSON.stringify(dadosFormatados.premiacoes),
+                    dadosFormatados.data_sorteio,
+                    dadosFormatados.data_proximo_concurso,
                 ],
             );
         } else {
             // ✅ VERSÃO CORRIGIDA DO INSERT PADRÃO
             await pool.query(
                 `INSERT INTO ${config.tabela} 
-        (concurso, dezenas, acumulou, valor_estimado_proximo, premiacoes, created_at) 
-         VALUES ($1, $2, $3, $4, $5, NOW())`,
+        (concurso, dezenas, acumulou, valor_estimado_proximo, premiacoes, data_sorteio, data_proximo_concurso, created_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
                 [
                     dadosFormatados.concurso,
                     dadosFormatados.dezenas,
                     dadosFormatados.acumulou,
                     dadosFormatados.valor_estimado_proximo,
                     JSON.stringify(dadosFormatados.premiacoes),
+                    dadosFormatados.data_sorteio,
+                    dadosFormatados.data_proximo_concurso,
                 ],
             );
         }
@@ -458,17 +508,20 @@ async function atualizarTodasLoterias() {
     resultadosCache.invalidate();
 
     if (totalNovos > 0) {
-        const loteriasComNovos = Object.entries(resultados)
-            .filter(
-                ([id, r]) =>
-                    r.success && r.novos && r.novos > 0 && id === "lotofacil",
-            )
-            .map(([id, r]) => ({
+        const loteriasComNovos = [];
+        for (const [id, r] of Object.entries(resultados)) {
+            if (!(r.success && r.novos && r.novos > 0 && id === "lotofacil")) {
+                continue;
+            }
+            const concurso = r.concursos?.[r.concursos.length - 1] || 0;
+            loteriasComNovos.push({
                 nome: r.loteria || id,
                 emoji: EMOJIS[id] || "🎯",
-                concurso: r.concursos?.[r.concursos.length - 1] || 0,
-                acumulou: false,
-            }));
+                concurso,
+                // true/false, ou null = aguardando rateio
+                acumulou: await buscarAcumulou(LOTERIAS_CONFIG[id].tabela, concurso),
+            });
+        }
 
         if (loteriasComNovos.length > 0) {
             await enviarEmailsNovasLoterias(loteriasComNovos);
