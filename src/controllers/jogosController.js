@@ -267,53 +267,15 @@ const listarMeusJogos = async (req, res) => {
         // ================================
         // PROCESSAMENTO DOS JOGOS
         // ================================
-        const jogosProcessados = [];
-
-        for (const jogo of result.rows) {
-            if (jogo.loteria === "duplasena") {
-                // ----------------------------
-                // 1º SORTEIO
-                // ----------------------------
-                jogosProcessados.push({
-                    ...jogo,
-                    sorteio: 1,
-                    label: "Dupla Sena – 1º Sorteio",
-                    dezenas_sorteadas: jogo.dezenas_1 || [],
-                    acertos:
-                        jogo.dezenas_1 && Array.isArray(jogo.dezenas_1)
-                            ? jogo.dezenas.filter((d) =>
-                                  jogo.dezenas_1.includes(d),
-                              ).length
-                            : 0,
-                });
-
-                // ----------------------------
-                // 2º SORTEIO
-                // ----------------------------
-                jogosProcessados.push({
-                    ...jogo,
-                    sorteio: 2,
-                    label: "Dupla Sena – 2º Sorteio",
-                    dezenas_sorteadas: jogo.dezenas_2 || [],
-                    acertos:
-                        jogo.dezenas_2 && Array.isArray(jogo.dezenas_2)
-                            ? jogo.dezenas.filter((d) =>
-                                  jogo.dezenas_2.includes(d),
-                              ).length
-                            : 0,
-                });
-            } else {
-                // ----------------------------
-                // OUTRAS LOTERIAS (NORMAL)
-                // ----------------------------
-                jogosProcessados.push({
-                    ...jogo,
-                    label: jogo.nome_jogo,
-                    sorteio: null,
-                    dezenas_sorteadas: jogo.dezenas_sorteadas || [],
-                });
-            }
-        }
+        // Um item por jogo. Dupla Sena: os dois sorteios ficam no mesmo item — o card de
+        // Meus Jogos confere cada sorteio à parte (frontend js/loterias.js → Loterias.conferir);
+        // `acertos` é o do melhor sorteio, gravado pela conferência (services/conferencia.js).
+        const jogosProcessados = result.rows.map((jogo) => ({
+            ...jogo,
+            label: jogo.nome_jogo,
+            sorteio: null,
+            dezenas_sorteadas: jogo.dezenas_sorteadas || [],
+        }));
 
         // ================================
         // RESPOSTA FINAL
