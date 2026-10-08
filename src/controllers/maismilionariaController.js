@@ -1,12 +1,14 @@
 // meus-projetos-principais\meu-projeto\backend\src\controllers\maismilionariaController.js
 const pool = require("../config/database");
+const { lerPaginacao } = require("../utils/paginacao");
 
 // ==========================================
 // LISTAR TODOS OS CONCURSOS
 // ==========================================
 exports.listarTodos = async (req, res) => {
     try {
-        const { limit = 50, offset = 0, concurso } = req.query;
+        const { concurso } = req.query;
+        const { limit, offset } = lerPaginacao(req.query, 50);
 
         let query = "SELECT * FROM maismilionaria";
         let countQuery = "SELECT COUNT(*) FROM maismilionaria";
@@ -36,10 +38,7 @@ exports.listarTodos = async (req, res) => {
             success: true,
             data: result.rows,
             total: parseInt(countResult.rows[0].count),
-            pagination: {
-                limit: parseInt(limit),
-                offset: parseInt(offset),
-            },
+            pagination: { limit, offset },
         });
     } catch (error) {
         console.error("Erro ao listar +Milionária:", error);
