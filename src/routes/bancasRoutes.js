@@ -3,7 +3,9 @@
 // Privacidade: não registramos QUEM clicou em QUAL banca.
 // - a tabela bancas_cliques não tem usuario_id;
 // - esta rota não aparece no log com o id do usuário (req.semLogDeUsuario, lido por
-//   verificarToken) e o log de requisições grava o caminho sem a banca (index.js);
+//   verificarToken);
+// - a banca vai no CORPO da requisição, nunca no endereço: assim nem o log da aplicação
+//   nem o log de acesso do proxy (Railway, que registra caminho + IP) sabem qual banca foi;
 // - o limite por usuário fica só em memória (express-rate-limit, MemoryStore).
 const express = require("express");
 const router = express.Router();
@@ -18,10 +20,10 @@ function semLogDeUsuario(req, res, next) {
     next();
 }
 
-// POST /api/bancas/:id/clique → 204
-router.post("/:id/clique", semLogDeUsuario, verificarToken, limiteCliqueBanca, async (req, res) => {
-    const { id } = req.params;
-    if (!ID_BANCA.test(id)) {
+// POST /api/bancas/clique  { "banca": "<id>" } → 204
+router.post("/clique", semLogDeUsuario, verificarToken, limiteCliqueBanca, async (req, res) => {
+    const id = req.body && req.body.banca;
+    if (typeof id !== "string" || !ID_BANCA.test(id)) {
         return res.status(400).json({ success: false, message: "Banca inválida." });
     }
 

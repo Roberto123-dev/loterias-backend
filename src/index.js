@@ -109,11 +109,9 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(express.static("src/public"));
 
-// Middleware de log
-// O clique em banca parceira é registrado sem a banca no caminho (privacidade).
+// Middleware de log (só método e caminho; o clique em banca leva a banca no corpo, que não é logado)
 app.use((req, res, next) => {
-    const caminho = req.path.replace(/^\/api\/bancas\/[^/]+\/clique$/, "/api/bancas/:id/clique");
-    console.log(`${req.method} ${caminho}`);
+    console.log(`${req.method} ${req.path}`);
     next();
 });
 

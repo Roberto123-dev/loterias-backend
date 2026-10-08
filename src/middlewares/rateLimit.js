@@ -63,7 +63,7 @@ const limiteGeralUsuario = criarLimitePorUsuario({ janelaMs: 60 * 1000, limite: 
 const limiteAnalise = criarLimitePorUsuario({ janelaMs: 5 * 60 * 1000, limite: 30 });
 // GET /<loteria>/numero/:numero
 const limiteNumero = criarLimitePorUsuario({ janelaMs: 60 * 1000, limite: 60 });
-// POST /api/bancas/:id/clique — contador de cliques das Bancas Parceiras
+// POST /api/bancas/clique — contador de cliques das Bancas Parceiras
 const limiteCliqueBanca = criarLimitePorUsuario({ janelaMs: 60 * 60 * 1000, limite: 30 });
 // POST /api/jogos/conferir-todos-simples — ~3 consultas por jogo salvo
 const limiteConferirTodos = criarLimitePorUsuario({ janelaMs: 60 * 60 * 1000, limite: 10 });
