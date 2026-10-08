@@ -40,6 +40,8 @@ temp/
 
 # Database
 *.sql
+# exceção: só migrations versionadas (dumps/backups .sql continuam ignorados)
+!database/migration-*.sql
 *.db
 *.sqlite
 
