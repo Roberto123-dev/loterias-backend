@@ -3,24 +3,23 @@ const express = require("express");
 const router = express.Router();
 const lotofacilController = require("../controllers/lotofacilController");
 const { verificarToken, verificarAdmin } = require("../middlewares/auth");
-const { verificarPlano } = require("../middlewares/verificarPlano");
+const { limiteNumero } = require("../middlewares/rateLimit");
+const { cacheResposta } = require("../middlewares/cacheResposta");
 
-// ROTAS PÚBLICAS (FREE + PRÓ)
+// Todas exigem login (sistema gratuito, sem plano)
 router.get("/", verificarToken, lotofacilController.listarTodos);
 router.get("/ultimo", verificarToken, lotofacilController.buscarUltimo);
-router.get("/estatisticas", verificarToken, lotofacilController.estatisticas);
+router.get("/estatisticas", verificarToken, cacheResposta, lotofacilController.estatisticas);
 
-// ROTAS BLOQUEADAS (APENAS PRÓ) 🔒
 router.get(
     "/:concurso",
     verificarToken,
-    verificarPlano("pro"),
     lotofacilController.buscarPorConcurso,
 );
 router.get(
     "/numero/:numero",
     verificarToken,
-    verificarPlano("pro"),
+    limiteNumero,
     lotofacilController.buscarPorNumero,
 );
 

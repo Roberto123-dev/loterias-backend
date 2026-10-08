@@ -3,10 +3,13 @@ const jwt = require("jsonwebtoken");
 const pool = require("../config/database");
 
 const { JWT_SECRET } = require("../config/jwt");
+const { limiteGeralUsuario } = require("./rateLimit");
 
 /**
- * Middleware para verificar JWT
- * IMPORTANTE: Busca dados atualizados do usuário no banco (incluindo plano)
+ * Middleware de autenticação (único — use em toda rota que exige login).
+ * Busca o usuário no banco a cada requisição: usuário removido perde o acesso
+ * na hora, sem esperar o token expirar. Aplica também o limite geral por usuário.
+ * Sistema gratuito: não há verificação de plano.
  */
 const verificarToken = async (req, res, next) => {
     try {
@@ -38,24 +41,6 @@ const verificarToken = async (req, res, next) => {
 
         const usuario = result.rows[0];
 
-        // Verificar se plano PRO expirou
-        if (usuario.plano === "pro" && usuario.plano_expira_em) {
-            const agora = new Date();
-            const expiracao = new Date(usuario.plano_expira_em);
-
-            if (expiracao < agora) {
-                // Plano expirado - fazer downgrade automático
-                await pool.query(
-                    "UPDATE usuarios SET plano = $1, plano_expira_em = NULL WHERE id = $2",
-                    ["free", usuario.id],
-                );
-                usuario.plano = "free";
-                console.log(
-                    `⚠️ Plano PRÓ do usuário ${usuario.id} expirou automaticamente`,
-                );
-            }
-        }
-
         // ✅ CORRIGIDO: Adicionada a 'role' no objeto req.usuario
         req.usuario = {
             id: usuario.id,
@@ -66,11 +51,10 @@ const verificarToken = async (req, res, next) => {
             role: usuario.role,
         };
 
-        console.log(
-            `✅ [AUTH] Usuário ${usuario.id} (${usuario.nome}) - Plano: ${usuario.plano} - Role: ${usuario.role}`,
-        );
+        // Sem nome/e-mail no log (dado pessoal)
+        console.log(`✅ [AUTH] Usuário ${usuario.id}`);
 
-        next();
+        return limiteGeralUsuario(req, res, next);
     } catch (error) {
         if (error.name === "TokenExpiredError") {
             return res.status(401).json({

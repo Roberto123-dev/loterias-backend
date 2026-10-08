@@ -3,11 +3,13 @@ const express = require("express");
 const router = express.Router();
 const { analisarCombinacoes } = require("../controllers/analiseController");
 const { analisarDezenas } = require("../controllers/analiseController");
-const authMiddleware = require("../middlewares/authMiddleware");
-const { verificarPlano } = require("../middlewares/verificarPlano");
+const { verificarToken } = require("../middlewares/auth");
+const { limiteAnalise } = require("../middlewares/rateLimit");
 
-router.use(authMiddleware); // Protege todas as rotas abaixo
-router.use(verificarPlano("pro")); // ← adicionar: exige plano PRO
+// Exige login (sistema gratuito) + limite por usuário: cada análise varre o histórico.
+// Corpo limitado a 100 KB em index.js.
+router.use(verificarToken);
+router.use(limiteAnalise);
 
 // POST /api/analise/dezenas
 router.post("/combinacoes", analisarCombinacoes);

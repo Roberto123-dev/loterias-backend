@@ -6,7 +6,8 @@ const pool = require("../config/database");
 
 /**
  * GET /api/planos/meu-plano
- * Ver plano atual do usuário
+ * Sistema gratuito: mantida só por compatibilidade com o frontend antigo, que ainda
+ * a chama até o deploy do frontend sem planos. Remover depois desse deploy.
  */
 router.get("/meu-plano", verificarToken, async (req, res) => {
     try {
@@ -34,20 +35,6 @@ router.get("/meu-plano", verificarToken, async (req, res) => {
             message: "Erro ao buscar plano",
         });
     }
-});
-
-/**
- * GET /api/planos/recursos
- * Listar recursos de cada plano
- */
-router.get("/recursos", (req, res) => {
-    res.json({
-        success: true,
-        data: {
-            free: getRecursosPorPlano("free"),
-            pro: getRecursosPorPlano("pro"),
-        },
-    });
 });
 
 // Função auxiliar - recursos por plano

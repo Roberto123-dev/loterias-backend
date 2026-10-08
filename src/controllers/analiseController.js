@@ -1,6 +1,20 @@
 // meus-projetos-principais\meu-projeto\backend\src\controllers\analiseController.js
 const pool = require("../config/database");
-const { tabelaLoteria } = require("../config/loterias");
+const { tabelaLoteria, REGRAS_LOTERIA } = require("../config/loterias");
+
+// Mesmo limite que a tela de Análise de Combinações já mostra ao usuário
+const MAX_COMBINACOES = 100;
+
+// Lista de dezenas inteiras, sem repetição, dentro do universo da loteria e com no máximo `max` itens
+function dezenasValidas(lista, regra, max) {
+    return (
+        Array.isArray(lista) &&
+        lista.length >= 1 &&
+        lista.length <= max &&
+        new Set(lista).size === lista.length &&
+        lista.every((d) => Number.isInteger(d) && d >= regra.min && d <= regra.max)
+    );
+}
 
 // =====================================================
 // 🔢 ANÁLISE DE COMBINAÇÕES
@@ -24,6 +38,17 @@ const analisarCombinacoes = async (req, res) => {
         return res.status(400).json({
             success: false,
             message: "Loteria inválida",
+        });
+    }
+
+    const regra = REGRAS_LOTERIA[loteria];
+    if (
+        combinacoes.length > MAX_COMBINACOES ||
+        !combinacoes.every((c) => dezenasValidas(c, regra, regra.apostaMax))
+    ) {
+        return res.status(400).json({
+            success: false,
+            message: `Envie até ${MAX_COMBINACOES} combinações, cada uma com até ${regra.apostaMax} dezenas entre ${regra.min} e ${regra.max}, sem repetir.`,
         });
     }
 
@@ -144,6 +169,15 @@ const analisarDezenas = async (req, res) => {
         return res.status(400).json({
             success: false,
             message: "Loteria inválida",
+        });
+    }
+
+    const regra = REGRAS_LOTERIA[loteria];
+    const universo = regra.max - regra.min + 1;
+    if (!dezenasValidas(dezenas, regra, universo)) {
+        return res.status(400).json({
+            success: false,
+            message: `Envie de 1 a ${universo} dezenas inteiras entre ${regra.min} e ${regra.max}, sem repetir.`,
         });
     }
 

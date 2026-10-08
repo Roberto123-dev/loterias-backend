@@ -2,10 +2,10 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../config/database");
-const authMiddleware = require("../middlewares/authMiddleware");
+const { verificarToken } = require("../middlewares/auth");
 
 // Inscrever
-router.post("/inscrever", authMiddleware, async (req, res) => {
+router.post("/inscrever", verificarToken, async (req, res) => {
     const { email, nome, id } = req.usuario;
 
     try {
@@ -26,7 +26,7 @@ router.post("/inscrever", authMiddleware, async (req, res) => {
 });
 
 // Cancelar
-router.post("/cancelar", authMiddleware, async (req, res) => {
+router.post("/cancelar", verificarToken, async (req, res) => {
     const { email } = req.usuario;
 
     try {
@@ -41,7 +41,7 @@ router.post("/cancelar", authMiddleware, async (req, res) => {
 });
 
 // Status
-router.get("/status", authMiddleware, async (req, res) => {
+router.get("/status", verificarToken, async (req, res) => {
     const { email } = req.usuario;
 
     const { rows } = await pool.query(

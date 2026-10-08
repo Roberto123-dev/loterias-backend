@@ -140,7 +140,8 @@ function criarController(nomeTabela, nomeLoteria, config = {}) {
         async buscarPorNumero(req, res, next) {
             try {
                 const { numero } = req.params;
-                const { limit = 50 } = req.query;
+                // Teto de 500: sem ele, ?limit= devolvia o histórico inteiro
+                const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 50, 1), 500);
 
                 let query;
                 if (temSegundoSorteio) {

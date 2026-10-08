@@ -3,21 +3,21 @@ const express = require("express");
 const router = express.Router();
 const megasenaController = require("../controllers/megasenaController");
 const { verificarToken, verificarAdmin } = require("../middlewares/auth");
-const { verificarPlano } = require("../middlewares/verificarPlano");
+const { limiteNumero } = require("../middlewares/rateLimit");
+const { cacheResposta } = require("../middlewares/cacheResposta");
 
 router.get("/", verificarToken, megasenaController.listarTodos);
 router.get("/ultimo", verificarToken, megasenaController.buscarUltimo);
-router.get("/estatisticas", verificarToken, megasenaController.estatisticas);
+router.get("/estatisticas", verificarToken, cacheResposta, megasenaController.estatisticas);
 router.get(
     "/:concurso",
     verificarToken,
-    verificarPlano("pro"),
     megasenaController.buscarPorConcurso,
 );
 router.get(
     "/numero/:numero",
     verificarToken,
-    verificarPlano("pro"),
+    limiteNumero,
     megasenaController.buscarPorNumero,
 );
 router.post("/", verificarToken, verificarAdmin, megasenaController.criar);

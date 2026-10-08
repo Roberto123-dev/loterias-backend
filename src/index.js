@@ -103,6 +103,8 @@ const emailNotifRoutes = require("./routes/emailNotifRoutes");
 // ============================================
 // MIDDLEWARES (ORDEM CORRETA)
 // ============================================
+// Análises recebem só listas de dezenas: corpo pequeno (o parser global ignora corpo já lido)
+app.use("/api/analise", express.json({ limit: "100kb" }));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(express.static("src/public"));
@@ -144,130 +146,10 @@ app.use("/api", cronRoutes);
 app.use("/api/notificacoes", emailNotifRoutes);
 
 // ============================================
-// ROTA RAIZ - DOCUMENTAÇÃO DA API
+// ROTA RAIZ — sem documentação pública (rotas, origens do CORS etc.)
 // ============================================
 app.get("/", (req, res) => {
-    res.json({
-        message: "🎰 API de Loterias - Node.js + PostgreSQL + Docker",
-        version: "3.0.0",
-        cors: {
-            enabled: true,
-            allowedOrigins: validOrigins,
-            frontendUrl: process.env.FRONTEND_URL || "não configurado",
-        },
-        features: [
-            "✅ Sistema de autenticação JWT",
-            "✅ Planos FREE e PRÓ",
-            "✅ Atualização automática de resultados",
-            "✅ 8 loterias brasileiras",
-            "✅ Estatísticas e análises",
-            "✅ Conferência de jogos (PRÓ)",
-            "✅ Painel Administrativo",
-        ],
-        loterias: {
-            lotofacil: {
-                endpoint: "/lotofacil",
-                dezenas: 15,
-                faixa: "1-25",
-            },
-            megasena: {
-                endpoint: "/megasena",
-                dezenas: 6,
-                faixa: "1-60",
-            },
-            quina: {
-                endpoint: "/quina",
-                dezenas: 5,
-                faixa: "1-80",
-            },
-            lotomania: {
-                endpoint: "/lotomania",
-                dezenas: 20,
-                faixa: "0-99",
-            },
-            duplasena: {
-                endpoint: "/duplasena",
-                dezenas: "6 + 6 (2 sorteios)",
-                faixa: "1-50",
-            },
-            diadasorte: {
-                endpoint: "/diadasorte",
-                dezenas: "7 + mês",
-                faixa: "1-31",
-            },
-            timemania: {
-                endpoint: "/timemania",
-                dezenas: "7 + time",
-                faixa: "1-80",
-            },
-            maismilionaria: {
-                endpoint: "/maismilionaria",
-                dezenas: "6 + 2 trevos",
-                faixa: "1-50 (dezenas), 1-6 (trevos)",
-            },
-        },
-        endpoints: {
-            // Autenticação
-            login: "POST /api/auth/login",
-            registro: "POST /api/auth/registro",
-            verificar: "GET /api/auth/verificar",
-
-            // Planos
-            meuPlano: "GET /api/planos/meu-plano",
-            upgrade: "POST /api/planos/upgrade",
-            recursos: "GET /api/planos/recursos",
-
-            // Admin
-            adminDashboard: "GET /api/admin/dashboard [ADMIN]",
-            adminUsuarios: "GET /api/admin/usuarios [ADMIN]",
-            adminAtivar: "POST /api/admin/usuarios/:id/ativar [ADMIN]",
-            adminDesativar: "POST /api/admin/usuarios/:id/desativar [ADMIN]",
-            adminHistorico: "GET /api/admin/historico [ADMIN]",
-            adminAlertas: "GET /api/admin/alertas [ADMIN]",
-
-            // Loterias (Públicas - FREE + PRÓ)
-            listar: "GET /{loteria}",
-            ultimo: "GET /{loteria}/ultimo",
-            estatisticas: "GET /{loteria}/estatisticas",
-
-            // Loterias (Bloqueadas - Apenas PRÓ)
-            detalhes: "GET /{loteria}/:concurso [PRÓ]",
-            conferir: "POST /{loteria}/conferir [PRÓ]",
-            analise: "GET /{loteria}/analise/* [PRÓ]",
-            historico: "GET /{loteria}/historico/:dezena [PRÓ]",
-
-            // Atualização
-            atualizarTodas: "GET /api/atualizar",
-            atualizarLoteria: "GET /api/atualizar/:loteria",
-            status: "GET /api/atualizar/status/loterias",
-        },
-        planos: {
-            free: {
-                recursos: [
-                    "Ver últimos resultados",
-                    "Listar concursos",
-                    "Estatísticas básicas (top 10)",
-                ],
-                limitacoes: [
-                    "Não pode conferir jogos",
-                    "Não pode ver detalhes completos",
-                    "Não pode ver análises avançadas",
-                ],
-            },
-            pro: {
-                recursos: [
-                    "Todos recursos do FREE",
-                    "Conferir jogos ilimitadamente",
-                    "Ver detalhes completos",
-                    "Estatísticas completas",
-                    "Análise de frequência",
-                    "Histórico de dezenas",
-                    "Mapa das dezenas",
-                ],
-                preco: "Sob consulta",
-            },
-        },
-    });
+    res.json({ status: "ok" });
 });
 
 // ============================================
@@ -361,7 +243,6 @@ app.listen(PORT, "0.0.0.0", () => {
     console.log("=".repeat(50));
     console.log("\n📋 Recursos Disponíveis:");
     console.log("   ✅ Sistema de autenticação JWT");
-    console.log("   ✅ Planos FREE e PRÓ");
     console.log("   ✅ 8 loterias brasileiras");
     console.log("   ✅ Atualização automática de resultados");
     console.log("   ✅ Estatísticas e análises");
