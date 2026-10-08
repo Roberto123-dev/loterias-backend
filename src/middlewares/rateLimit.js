@@ -5,13 +5,17 @@ const { rateLimit } = require("express-rate-limit");
 // Para escalar: trocar por um store compartilhado (ex.: rate-limit-redis).
 //
 // Resposta 429 (todas): { success: false, code: "LIMITE_ATINGIDO", message, tenteNovamenteEm }
-// tenteNovamenteEm = segundos até liberar — o frontend usa para mostrar o tempo de espera.
-function criarLimite({
-    janelaMs,
-    limite,
-    mensagem = "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
-    ...extra
-}) {
+// tenteNovamenteEm = segundos até liberar; a message já diz o tempo de espera em texto
+// (as telas de login/cadastro mostram a message direto).
+function formatarEspera(segundos) {
+    if (segundos < 60) return `${segundos} segundo${segundos === 1 ? "" : "s"}`;
+    const minutos = Math.ceil(segundos / 60);
+    if (minutos < 60) return `${minutos} minuto${minutos === 1 ? "" : "s"}`;
+    const horas = Math.ceil(minutos / 60);
+    return `${horas} hora${horas === 1 ? "" : "s"}`;
+}
+
+function criarLimite({ janelaMs, limite, mensagem = "Muitas tentativas.", ...extra }) {
     return rateLimit({
         windowMs: janelaMs,
         limit: limite,
@@ -25,7 +29,7 @@ function criarLimite({
             res.status(opcoes.statusCode).json({
                 success: false,
                 code: "LIMITE_ATINGIDO",
-                message: mensagem,
+                message: `${mensagem} Tente novamente em ${formatarEspera(segundos)}.`,
                 tenteNovamenteEm: segundos,
             });
         },
@@ -47,7 +51,7 @@ const limiteForgot = criarLimite({ janelaMs: 60 * 60 * 1000, limite: 5 });
 // ============================================
 function criarLimitePorUsuario(opcoes) {
     return criarLimite({
-        mensagem: "Muitas consultas em pouco tempo. Aguarde e tente novamente.",
+        mensagem: "Você fez muitas consultas em pouco tempo.",
         keyGenerator: (req) => `usuario:${req.usuario.id}`,
         ...opcoes,
     });
