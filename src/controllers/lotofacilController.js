@@ -1,10 +1,11 @@
 // meus-projetos-principais\meu-projeto\backend\src\controllers\lotofacilController.js
 const pool = require("../config/database");
+const { lerPaginacao } = require("../utils/paginacao");
 
 class LotofacilController {
     async listarTodos(req, res, next) {
         try {
-            const { limit = 20, offset = 0 } = req.query;
+            const { limit, offset } = lerPaginacao(req.query, 20);
             const { rows } = await pool.query(
                 "SELECT * FROM lotofacil ORDER BY concurso DESC LIMIT $1 OFFSET $2",
                 [limit, offset],
