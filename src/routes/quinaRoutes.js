@@ -3,21 +3,21 @@ const express = require("express");
 const router = express.Router();
 const quinaController = require("../controllers/quinaController");
 const { verificarToken, verificarAdmin } = require("../middlewares/auth");
-const { verificarPlano } = require("../middlewares/verificarPlano");
+const { limiteNumero } = require("../middlewares/rateLimit");
+const { cacheResposta } = require("../middlewares/cacheResposta");
 
 router.get("/", verificarToken, quinaController.listarTodos);
 router.get("/ultimo", verificarToken, quinaController.buscarUltimo);
-router.get("/estatisticas", verificarToken, quinaController.estatisticas);
+router.get("/estatisticas", verificarToken, cacheResposta, quinaController.estatisticas);
 router.get(
     "/:concurso",
     verificarToken,
-    verificarPlano("pro"),
     quinaController.buscarPorConcurso,
 );
 router.get(
     "/numero/:numero",
     verificarToken,
-    verificarPlano("pro"),
+    limiteNumero,
     quinaController.buscarPorNumero,
 );
 router.post("/", verificarToken, verificarAdmin, quinaController.criar);

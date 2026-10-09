@@ -116,7 +116,8 @@ exports.buscarPorConcurso = async (req, res) => {
 exports.buscarPorNumero = async (req, res) => {
     try {
         const { numero } = req.params;
-        const { limit = 50 } = req.query;
+        // Teto de 500: sem ele, ?limit= devolvia o histórico inteiro
+        const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 50, 1), 500);
 
         const result = await pool.query(
             `SELECT * FROM diadasorte 
@@ -146,7 +147,8 @@ exports.buscarPorNumero = async (req, res) => {
 exports.buscarPorMes = async (req, res) => {
     try {
         const { mes } = req.params;
-        const { limit = 50 } = req.query;
+        // Teto de 500: sem ele, ?limit= devolvia o histórico inteiro
+        const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 50, 1), 500);
 
         const result = await pool.query(
             `SELECT * FROM diadasorte 

@@ -7,12 +7,13 @@ const express = require("express");
 const router = express.Router();
 
 const jogosController = require("../controllers/jogosController");
-const authMiddleware = require("../middlewares/authMiddleware");
+const { verificarToken } = require("../middlewares/auth");
+const { limiteConferirTodos } = require("../middlewares/rateLimit");
 
 // ============================================
 // TODAS AS ROTAS REQUEREM AUTENTICAÇÃO
 // ============================================
-router.use(authMiddleware);
+router.use(verificarToken);
 
 // ============================================
 // 📁 GRUPOS
@@ -33,7 +34,7 @@ router.delete("/nome", jogosController.removerNomeGrupo);
 // ============================================
 
 // Conferir todos os jogos automaticamente
-router.post("/conferir-todos-simples", jogosController.conferirTodosSimples);
+router.post("/conferir-todos-simples", limiteConferirTodos, jogosController.conferirTodosSimples);
 
 // Conferir jogo individual (simplificado)
 router.post("/:id/conferir-simples", jogosController.conferirJogoSimples);

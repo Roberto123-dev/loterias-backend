@@ -8,12 +8,12 @@
 const express = require("express");
 const router = express.Router();
 const adminController = require("../controllers/adminController");
-const authMiddleware = require("../middlewares/authMiddleware");
+const { verificarToken } = require("../middlewares/auth");
 
 // ============================================
 // MIDDLEWARE: Todas as rotas requerem auth + admin
 // ============================================
-router.use(authMiddleware);
+router.use(verificarToken);
 router.use(adminController.verificarAdmin);
 
 // ============================================

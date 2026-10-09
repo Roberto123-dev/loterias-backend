@@ -3,6 +3,7 @@ const pool = require("../config/database");
 const CaixaAPI = require("./caixaAPI");
 const { ResultadosAPI, resultadosApiAtiva } = require("./resultadosAPI");
 const resultadosCache = require("./resultadosCache");
+const { limparCacheRespostas } = require("../middlewares/cacheResposta");
 
 const EMOJIS = {
     megasena: "🟢",
@@ -506,6 +507,7 @@ async function atualizarTodasLoterias() {
 
     // 🧹 limpa o cache pra próxima requisição pegar os dados frescos
     resultadosCache.invalidate();
+    limparCacheRespostas(); // estatísticas (middlewares/cacheResposta.js)
 
     if (totalNovos > 0) {
         const loteriasComNovos = [];
