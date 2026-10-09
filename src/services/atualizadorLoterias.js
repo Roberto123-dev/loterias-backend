@@ -1,20 +1,8 @@
-const { enviarEmailsNovasLoterias } = require("./emailService");
 const pool = require("../config/database");
 const CaixaAPI = require("./caixaAPI");
 const { ResultadosAPI, resultadosApiAtiva } = require("./resultadosAPI");
 const resultadosCache = require("./resultadosCache");
 const { limparCacheRespostas } = require("../middlewares/cacheResposta");
-
-const EMOJIS = {
-    megasena: "🟢",
-    lotofacil: "🟣",
-    quina: "🔵",
-    lotomania: "🟠",
-    duplasena: "🔴",
-    timemania: "🟡",
-    diadesorte: "🌸",
-    maismilionaria: "💎",
-};
 
 // Configuração das loterias e suas APIs
 const LOTERIAS_CONFIG = {
@@ -165,22 +153,6 @@ function calcularAcumulou(dados) {
     return typeof faixa1?.numeroDeGanhadores === "number"
         ? faixa1.numeroDeGanhadores === 0
         : null;
-}
-
-/**
- * Valor gravado de `acumulou` para o e-mail (null se não houver ou der erro)
- */
-async function buscarAcumulou(tabela, concurso) {
-    try {
-        const { rows } = await pool.query(
-            `SELECT acumulou FROM ${tabela} WHERE concurso = $1`,
-            [concurso],
-        );
-        return rows[0]?.acumulou ?? null;
-    } catch (error) {
-        console.error("Erro ao buscar acumulou para o e-mail:", error);
-        return null;
-    }
 }
 
 /**
@@ -508,27 +480,6 @@ async function atualizarTodasLoterias() {
     // 🧹 limpa o cache pra próxima requisição pegar os dados frescos
     resultadosCache.invalidate();
     limparCacheRespostas(); // estatísticas (middlewares/cacheResposta.js)
-
-    if (totalNovos > 0) {
-        const loteriasComNovos = [];
-        for (const [id, r] of Object.entries(resultados)) {
-            if (!(r.success && r.novos && r.novos > 0 && id === "lotofacil")) {
-                continue;
-            }
-            const concurso = r.concursos?.[r.concursos.length - 1] || 0;
-            loteriasComNovos.push({
-                nome: r.loteria || id,
-                emoji: EMOJIS[id] || "🎯",
-                concurso,
-                // true/false, ou null = aguardando rateio
-                acumulou: await buscarAcumulou(LOTERIAS_CONFIG[id].tabela, concurso),
-            });
-        }
-
-        if (loteriasComNovos.length > 0) {
-            await enviarEmailsNovasLoterias(loteriasComNovos);
-        }
-    }
 
     return {
         success: !todasFalharam,
