@@ -11,6 +11,7 @@ router.get("/ultimos-todos", async (req, res) => {
             return res.json({ success: true, data: emCache, cached: true });
         }
 
+        // Datas como texto AAAA-MM-DD (to_char), para o fuso não deslocar o dia no JSON.
         const query = `
         WITH
         m AS (
@@ -18,6 +19,8 @@ router.get("/ultimos-todos", async (req, res) => {
                 acumulou,
                 premiacoes,
                 valor_estimado_proximo,
+                to_char(data_sorteio, 'YYYY-MM-DD') AS data_sorteio,
+                to_char(data_proximo_concurso, 'YYYY-MM-DD') AS data_proximo_concurso,
                 NULL::int[] AS dezenas_2,
                 NULL::int[] AS trevos,
                 NULL::text  AS mes_sorte,
@@ -31,6 +34,8 @@ router.get("/ultimos-todos", async (req, res) => {
                 acumulou,
                 premiacoes,
                 valor_estimado_proximo,
+                to_char(data_sorteio, 'YYYY-MM-DD') AS data_sorteio,
+                to_char(data_proximo_concurso, 'YYYY-MM-DD') AS data_proximo_concurso,
                 NULL::int[],
                 NULL::int[],
                 NULL::text,
@@ -44,6 +49,8 @@ router.get("/ultimos-todos", async (req, res) => {
                 acumulou,
                 premiacoes,
                 valor_estimado_proximo,
+                to_char(data_sorteio, 'YYYY-MM-DD') AS data_sorteio,
+                to_char(data_proximo_concurso, 'YYYY-MM-DD') AS data_proximo_concurso,
                 NULL::int[],
                 NULL::int[],
                 NULL::text,
@@ -57,6 +64,8 @@ router.get("/ultimos-todos", async (req, res) => {
                 acumulou,
                 premiacoes,
                 valor_estimado_proximo,
+                to_char(data_sorteio, 'YYYY-MM-DD') AS data_sorteio,
+                to_char(data_proximo_concurso, 'YYYY-MM-DD') AS data_proximo_concurso,
                 NULL::int[],
                 NULL::int[],
                 NULL::text,
@@ -70,6 +79,8 @@ router.get("/ultimos-todos", async (req, res) => {
                 acumulou,
                 premiacoes,
                 valor_estimado_proximo,
+                to_char(data_sorteio, 'YYYY-MM-DD') AS data_sorteio,
+                to_char(data_proximo_concurso, 'YYYY-MM-DD') AS data_proximo_concurso,
                 dezenas_2,
                 NULL::int[],
                 NULL::text,
@@ -83,6 +94,8 @@ router.get("/ultimos-todos", async (req, res) => {
                 acumulou,
                 premiacoes,
                 valor_estimado_proximo,
+                to_char(data_sorteio, 'YYYY-MM-DD') AS data_sorteio,
+                to_char(data_proximo_concurso, 'YYYY-MM-DD') AS data_proximo_concurso,
                 NULL::int[],
                 NULL::int[],
                 NULL::text,
@@ -96,6 +109,8 @@ router.get("/ultimos-todos", async (req, res) => {
                 acumulou,
                 premiacoes,
                 valor_estimado_proximo,
+                to_char(data_sorteio, 'YYYY-MM-DD') AS data_sorteio,
+                to_char(data_proximo_concurso, 'YYYY-MM-DD') AS data_proximo_concurso,
                 NULL::int[],
                 NULL::int[],
                 mes_sorte,
@@ -109,6 +124,8 @@ router.get("/ultimos-todos", async (req, res) => {
                 acumulou,
                 premiacoes,
                 valor_estimado_proximo,
+                to_char(data_sorteio, 'YYYY-MM-DD') AS data_sorteio,
+                to_char(data_proximo_concurso, 'YYYY-MM-DD') AS data_proximo_concurso,
                 NULL::int[],
                 trevos,
                 NULL::text,

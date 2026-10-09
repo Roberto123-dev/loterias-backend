@@ -9,6 +9,13 @@ if (!EMAIL_ATIVO) {
     console.log("[EMAIL] envio desativado (EMAIL_ENABLED=false)");
 }
 
+// acumulou: true / false / null (null = rateio ainda não publicado)
+function statusAcumulou(acumulou) {
+    if (acumulou === true) return { cor: "#ff6b35", texto: "🔥 ACUMULOU" };
+    if (acumulou === false) return { cor: "#22c55e", texto: "✅ TEVE GANHADOR" };
+    return { cor: "#9ca3af", texto: "⏳ AGUARDANDO RATEIO" };
+}
+
 function gerarHtml(loterias) {
     const baseUrl = process.env.SITE_URL || "https://robertoloterias.com.br";
 
@@ -24,8 +31,8 @@ function gerarHtml(loterias) {
         Concurso ${l.concurso}
       </td>
       <td style="padding:12px 16px;border-bottom:1px solid #f0f0f0;text-align:right">
-        <span style="background:${l.acumulou ? "#ff6b35" : "#22c55e"};color:white;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:bold">
-          ${l.acumulou ? "🔥 ACUMULOU" : "✅ TEVE GANHADOR"}
+        <span style="background:${statusAcumulou(l.acumulou).cor};color:white;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:bold">
+          ${statusAcumulou(l.acumulou).texto}
         </span>
       </td>
     </tr>
