@@ -44,7 +44,7 @@ function tabelaLoteria(loteria) {
 const COMPAT_GERADOR_ANTIGO = true;
 
 // Quantidade de dezenas aceita no salvamento (as demais loterias seguem o limite antigo,
-// fora do escopo da etapa 12 — BUGS-LOTERIAS.md, item 8)
+// fora do escopo da etapa 12 — anotações internas)
 const QTD_SALVAMENTO = Object.freeze({
     megasena: { min: 6, max: 60 },
     lotofacil: { min: 15, max: 25 },

@@ -6,6 +6,7 @@
 const pool = require("../config/database");
 const { tabelaLoteria, REGRAS_LOTERIA, QTD_SALVAMENTO, normalizarMes } = require("../config/loterias");
 const { conferirJogo: conferirPelasRegras } = require("../services/conferencia");
+const { lerPaginacao, LIMITE_MAXIMO } = require("../utils/paginacao");
 
 // ============================================
 // CONFIGURAÇÕES DAS LOTERIAS
@@ -228,41 +229,35 @@ const salvarJogo = async (req, res) => {
 const listarMeusJogos = async (req, res) => {
     try {
         const usuarioId = req.usuario.id;
-        const { loteria, favorito, limit = 50, offset = 0 } = req.query;
+        const { loteria, favorito } = req.query;
+        // Teto de 500 por página (utils/paginacao.js); quem tem mais jogos pagina com offset
+        const { limit, offset } = lerPaginacao(req.query, 50);
 
         // ================================
-        // QUERY BASE
+        // FILTROS (os mesmos na lista e na contagem)
         // ================================
-        let query = `
-      SELECT *
-      FROM vw_meus_jogos
-      WHERE usuario_id = $1
-    `;
+        let filtros = "WHERE usuario_id = $1";
         const params = [usuarioId];
-        let paramCount = 1;
 
         if (loteria) {
-            paramCount++;
-            query += ` AND loteria = $${paramCount}`;
             params.push(loteria);
+            filtros += ` AND loteria = $${params.length}`;
         }
 
         if (favorito === "true") {
-            query += " AND favorito = TRUE";
+            filtros += " AND favorito = TRUE";
         }
 
-        query += " ORDER BY created_at DESC";
-
-        // Paginação
-        paramCount++;
-        query += ` LIMIT $${paramCount}`;
-        params.push(limit);
-
-        paramCount++;
-        query += ` OFFSET $${paramCount}`;
-        params.push(offset);
-
-        const result = await pool.query(query, params);
+        // id desempata jogos salvos no mesmo lote (mesmo created_at): a paginação fica estável
+        const [result, contagem] = await Promise.all([
+            pool.query(
+                `SELECT * FROM vw_meus_jogos ${filtros}
+                 ORDER BY created_at DESC, id DESC
+                 LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+                [...params, limit, offset],
+            ),
+            pool.query(`SELECT count(*) FROM vw_meus_jogos ${filtros}`, params),
+        ]);
 
         // ================================
         // PROCESSAMENTO DOS JOGOS
@@ -283,9 +278,9 @@ const listarMeusJogos = async (req, res) => {
         res.json({
             success: true,
             data: jogosProcessados,
-            total: jogosProcessados.length,
-            limit: parseInt(limit),
-            offset: parseInt(offset),
+            total: Number(contagem.rows[0].count),
+            limit,
+            offset,
         });
     } catch (error) {
         console.error("Erro ao listar jogos:", error);
@@ -1054,6 +1049,14 @@ const excluirJogosEmLote = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: "Nenhum jogo selecionado para exclusão.",
+            });
+        }
+
+        // Teto por requisição (o frontend manda em lotes de até 500)
+        if (ids.length > LIMITE_MAXIMO || !ids.every((id) => Number.isInteger(id) && id > 0)) {
+            return res.status(400).json({
+                success: false,
+                message: `Envie de 1 a ${LIMITE_MAXIMO} jogos por vez.`,
             });
         }
 
