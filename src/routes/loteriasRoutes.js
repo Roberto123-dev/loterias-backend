@@ -7,6 +7,10 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../config/database");
+const { verificarToken } = require("../middlewares/auth");
+
+// Todas as rotas abaixo exigem login
+router.use(verificarToken);
 
 // ============================================
 // GET /api/loterias/:loteria/resultado/:concurso

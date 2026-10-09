@@ -8,6 +8,7 @@ const {
     LOTERIAS_CONFIG,
 } = require("../services/atualizadorLoterias.js");
 const { exigirCronSecret } = require("../middlewares/exigirCronSecret");
+const { verificarToken } = require("../middlewares/auth");
 
 /**
  * GET /api/atualizar/forcar
@@ -37,10 +38,9 @@ router.get("/forcar", exigirCronSecret, async (req, res) => {
 
 /**
  * GET /api/atualizar/status/loterias
- * Status de cada loteria (apenas leitura).
- * Deixei ABERTA por ser só informativa — adicione `exigirCronSecret` se quiser fechar.
+ * Status de cada loteria (apenas leitura). Exige login.
  */
-router.get("/status/loterias", async (req, res) => {
+router.get("/status/loterias", verificarToken, async (req, res) => {
     try {
         const pool = require("../config/database");
         const status = {};
