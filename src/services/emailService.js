@@ -1,7 +1,13 @@
 const { Resend } = require("resend");
 const pool = require("../config/database");
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// EMAIL_ENABLED=false desliga todos os envios (ex.: ambiente local). Sem a variável → envia (produção).
+const EMAIL_ATIVO = process.env.EMAIL_ENABLED !== "false";
+const resend = EMAIL_ATIVO ? new Resend(process.env.RESEND_API_KEY) : null;
+
+if (!EMAIL_ATIVO) {
+    console.log("[EMAIL] envio desativado (EMAIL_ENABLED=false)");
+}
 
 function gerarHtml(loterias) {
     const baseUrl = process.env.SITE_URL || "https://robertoloterias.com.br";
@@ -80,6 +86,10 @@ function gerarHtml(loterias) {
 }
 
 async function enviarEmailsNovasLoterias(loterias) {
+    if (!EMAIL_ATIVO) {
+        console.log("[EMAIL] envio desativado (EMAIL_ENABLED=false)");
+        return;
+    }
     if (loterias.length === 0) return;
 
     const { rows } = await pool.query(
@@ -120,6 +130,10 @@ async function enviarEmailsNovasLoterias(loterias) {
 }
 
 async function sendEmail({ to, subject, html, text }) {
+    if (!EMAIL_ATIVO) {
+        console.log("[EMAIL] envio desativado (EMAIL_ENABLED=false)");
+        return;
+    }
     try {
         await resend.emails.send({
             from: `Roberto Loterias <${process.env.EMAIL_FROM}>`,
