@@ -3,6 +3,7 @@ const CaixaAPI = require("./caixaAPI");
 const { ResultadosAPI, resultadosApiAtiva } = require("./resultadosAPI");
 const resultadosCache = require("./resultadosCache");
 const { limparCacheRespostas } = require("../middlewares/cacheResposta");
+const { normalizarMes } = require("../config/loterias");
 
 // Configuração das loterias e suas APIs
 const LOTERIAS_CONFIG = {
@@ -292,7 +293,8 @@ async function inserirConcurso(loteriaId, dados) {
             );
         } else if (loteriaId === "diadesorte") {
             // Dia de Sorte tem dezenas + mês da sorte
-            const mesSorte = dados.nomeTimeCoracaoMesSorte || "";
+            // Mês num formato só ("Março"); a Caixa já mandou "3", "Março" e "Mar&ccedil;o"
+            const mesSorte = normalizarMes(dados.nomeTimeCoracaoMesSorte) || dados.nomeTimeCoracaoMesSorte || "";
 
             await pool.query(
                 `INSERT INTO ${config.tabela} 

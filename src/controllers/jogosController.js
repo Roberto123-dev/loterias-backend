@@ -4,7 +4,9 @@
 // ============================================
 
 const pool = require("../config/database");
-const { tabelaLoteria } = require("../config/loterias");
+const { tabelaLoteria, REGRAS_LOTERIA, QTD_SALVAMENTO, normalizarMes } = require("../config/loterias");
+const { conferirJogo: conferirPelasRegras } = require("../services/conferencia");
+const { lerPaginacao, LIMITE_MAXIMO } = require("../utils/paginacao");
 
 // ============================================
 // CONFIGURAÇÕES DAS LOTERIAS
@@ -227,92 +229,48 @@ const salvarJogo = async (req, res) => {
 const listarMeusJogos = async (req, res) => {
     try {
         const usuarioId = req.usuario.id;
-        const { loteria, favorito, limit = 50, offset = 0 } = req.query;
+        const { loteria, favorito } = req.query;
+        // Teto de 500 por página (utils/paginacao.js); quem tem mais jogos pagina com offset
+        const { limit, offset } = lerPaginacao(req.query, 50);
 
         // ================================
-        // QUERY BASE
+        // FILTROS (os mesmos na lista e na contagem)
         // ================================
-        let query = `
-      SELECT *
-      FROM vw_meus_jogos
-      WHERE usuario_id = $1
-    `;
+        let filtros = "WHERE usuario_id = $1";
         const params = [usuarioId];
-        let paramCount = 1;
 
         if (loteria) {
-            paramCount++;
-            query += ` AND loteria = $${paramCount}`;
             params.push(loteria);
+            filtros += ` AND loteria = $${params.length}`;
         }
 
         if (favorito === "true") {
-            query += " AND favorito = TRUE";
+            filtros += " AND favorito = TRUE";
         }
 
-        query += " ORDER BY created_at DESC";
-
-        // Paginação
-        paramCount++;
-        query += ` LIMIT $${paramCount}`;
-        params.push(limit);
-
-        paramCount++;
-        query += ` OFFSET $${paramCount}`;
-        params.push(offset);
-
-        const result = await pool.query(query, params);
+        // id desempata jogos salvos no mesmo lote (mesmo created_at): a paginação fica estável
+        const [result, contagem] = await Promise.all([
+            pool.query(
+                `SELECT * FROM vw_meus_jogos ${filtros}
+                 ORDER BY created_at DESC, id DESC
+                 LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+                [...params, limit, offset],
+            ),
+            pool.query(`SELECT count(*) FROM vw_meus_jogos ${filtros}`, params),
+        ]);
 
         // ================================
         // PROCESSAMENTO DOS JOGOS
         // ================================
-        const jogosProcessados = [];
-
-        for (const jogo of result.rows) {
-            if (jogo.loteria === "duplasena") {
-                // ----------------------------
-                // 1º SORTEIO
-                // ----------------------------
-                jogosProcessados.push({
-                    ...jogo,
-                    sorteio: 1,
-                    label: "Dupla Sena – 1º Sorteio",
-                    dezenas_sorteadas: jogo.dezenas_1 || [],
-                    acertos:
-                        jogo.dezenas_1 && Array.isArray(jogo.dezenas_1)
-                            ? jogo.dezenas.filter((d) =>
-                                  jogo.dezenas_1.includes(d),
-                              ).length
-                            : 0,
-                });
-
-                // ----------------------------
-                // 2º SORTEIO
-                // ----------------------------
-                jogosProcessados.push({
-                    ...jogo,
-                    sorteio: 2,
-                    label: "Dupla Sena – 2º Sorteio",
-                    dezenas_sorteadas: jogo.dezenas_2 || [],
-                    acertos:
-                        jogo.dezenas_2 && Array.isArray(jogo.dezenas_2)
-                            ? jogo.dezenas.filter((d) =>
-                                  jogo.dezenas_2.includes(d),
-                              ).length
-                            : 0,
-                });
-            } else {
-                // ----------------------------
-                // OUTRAS LOTERIAS (NORMAL)
-                // ----------------------------
-                jogosProcessados.push({
-                    ...jogo,
-                    label: jogo.nome_jogo,
-                    sorteio: null,
-                    dezenas_sorteadas: jogo.dezenas_sorteadas || [],
-                });
-            }
-        }
+        // Um item por jogo. Dupla Sena: os dois sorteios ficam no mesmo item — o card de
+        // Meus Jogos confere cada sorteio à parte (frontend js/loterias.js → Loterias.conferir);
+        // `acertos` é o do melhor sorteio, gravado pela conferência (services/conferencia.js).
+        const jogosProcessados = result.rows.map((jogo) => ({
+            ...jogo,
+            label: jogo.nome_jogo,
+            sorteio: null,
+            dezenas_sorteadas: jogo.dezenas_sorteadas || [],
+        }));
 
         // ================================
         // RESPOSTA FINAL
@@ -320,9 +278,9 @@ const listarMeusJogos = async (req, res) => {
         res.json({
             success: true,
             data: jogosProcessados,
-            total: jogosProcessados.length,
-            limit: parseInt(limit),
-            offset: parseInt(offset),
+            total: Number(contagem.rows[0].count),
+            limit,
+            offset,
         });
     } catch (error) {
         console.error("Erro ao listar jogos:", error);
@@ -700,33 +658,29 @@ const salvarJogosLote = async (req, res) => {
             });
         }
 
-        // Configurações de validação por loteria
-        const config = {
-            megasena: { min: 6, max: 60, total: 60 },
-            lotofacil: { min: 15, max: 25, total: 25 },
-            quina: { min: 5, max: 80, total: 80 },
-            lotomania: { min: 50, max: 100, total: 100 },
-            duplasena: { min: 6, max: 50, total: 50 },
-            timemania: { min: 7, max: 80, total: 80 },
-            diadasorte: { min: 7, max: 31, total: 31 },
-            maismilionaria: { min: 6, max: 50, total: 50 },
-        };
-
-        const loteriaConfig = config[loteria];
+        // Quantidade aceita por loteria (config/loterias.js; Lotomania e Timemania
+        // ficam no limite antigo enquanto COMPAT_GERADOR_ANTIGO = true)
+        const loteriaConfig = QTD_SALVAMENTO[loteria];
+        const universo = REGRAS_LOTERIA[loteria]; // { min, max } das dezenas (Lotomania 0–99)
 
         const jogosValidados = [];
 
         for (let i = 0; i < jogos.length; i++) {
-            const dezenas = jogos[i]
-                .split(" ")
-                .map((d) => parseInt(d.trim()))
+            // Formato antigo: "01 02 03"; novo: { dezenas: [..], trevos: [..], mes_sorte: "Março" }
+            const item = jogos[i];
+            const textoOuLista = typeof item === "string" ? item.split(" ") : item && item.dezenas;
+            if (!Array.isArray(textoOuLista)) {
+                return res.status(400).json({ success: false, message: `Jogo ${i + 1} inválido` });
+            }
+            let dezenas = textoOuLista
+                .map((d) => parseInt(String(d).trim(), 10))
                 .filter((n) => !isNaN(n));
 
+            // Lotomania: o gerador antigo numerava 1–100; o "100" é o "00" do volante
+            if (loteria === "lotomania") dezenas = dezenas.map((d) => (d === 100 ? 0 : d));
+
             // quantidade
-            if (
-                dezenas.length < loteriaConfig.min ||
-                dezenas.length > loteriaConfig.max
-            ) {
+            if (dezenas.length < loteriaConfig.min || dezenas.length > loteriaConfig.max) {
                 return res.status(400).json({
                     success: false,
                     message: `Jogo ${i + 1} inválido: quantidade incorreta`,
@@ -734,14 +688,14 @@ const salvarJogosLote = async (req, res) => {
             }
 
             // faixa
-            if (dezenas.some((d) => d < 1 || d > loteriaConfig.total)) {
+            if (dezenas.some((d) => d < universo.min || d > universo.max)) {
                 return res.status(400).json({
                     success: false,
                     message: `Jogo ${i + 1} contém dezenas inválidas`,
                 });
             }
 
-            // duplicadas
+            // duplicadas (inclui 0 e 100 juntos na Lotomania)
             if (new Set(dezenas).size !== dezenas.length) {
                 return res.status(400).json({
                     success: false,
@@ -749,7 +703,30 @@ const salvarJogosLote = async (req, res) => {
                 });
             }
 
-            jogosValidados.push(dezenas);
+            // extras (opcionais: o gerador antigo não envia)
+            let trevos = null;
+            let mesSorte = null;
+            if (item && typeof item === "object") {
+                if (loteria === "maismilionaria" && item.trevos !== undefined && item.trevos !== null) {
+                    trevos = Array.isArray(item.trevos) ? item.trevos.map((t) => parseInt(t, 10)) : [];
+                    const trevosOk =
+                        trevos.length >= 2 &&
+                        trevos.length <= 6 &&
+                        new Set(trevos).size === trevos.length &&
+                        trevos.every((t) => Number.isInteger(t) && t >= 1 && t <= 6);
+                    if (!trevosOk) {
+                        return res.status(400).json({ success: false, message: `Jogo ${i + 1}: trevos inválidos (2 a 6 trevos de 1 a 6)` });
+                    }
+                }
+                if (loteria === "diadasorte" && item.mes_sorte) {
+                    mesSorte = normalizarMes(item.mes_sorte);
+                    if (!mesSorte) {
+                        return res.status(400).json({ success: false, message: `Jogo ${i + 1}: mês da sorte inválido` });
+                    }
+                }
+            }
+
+            jogosValidados.push({ dezenas, trevos, mesSorte });
         }
 
         console.log("✅ Todos os jogos validados:", jogosValidados.length);
@@ -760,10 +737,10 @@ const salvarJogosLote = async (req, res) => {
         const valores = [];
         const placeholders = [];
 
-        jogosValidados.forEach((dezenasArray, index) => {
-            const offset = index * 4; // ✅ 4 colunas
+        jogosValidados.forEach((jogo, index) => {
+            const offset = index * 6; // 6 colunas
             placeholders.push(
-                `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4})`,
+                `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6})`,
             );
 
             // Passa o ARRAY diretamente, não a string
@@ -771,12 +748,14 @@ const salvarJogosLote = async (req, res) => {
                 usuarioId,
                 loteria,
                 label?.trim() || `Jogo ${LOTERIAS_CONFIG[loteria].nome}`,
-                dezenasArray,
+                jogo.dezenas,
+                jogo.trevos,
+                jogo.mesSorte,
             );
         });
 
         const query = `
-      INSERT INTO jogos_salvos (usuario_id, loteria, nome_jogo, dezenas)
+      INSERT INTO jogos_salvos (usuario_id, loteria, nome_jogo, dezenas, trevos, mes_sorte)
       VALUES ${placeholders.join(", ")}
       RETURNING id
     `;
@@ -852,10 +831,7 @@ const conferirJogoSimples = async (req, res) => {
         let concursoResult;
         try {
             concursoResult = await pool.query(
-                `SELECT concurso, dezenas
-         FROM ${tabela}
-         ORDER BY concurso DESC
-         LIMIT 1`,
+                `SELECT * FROM ${tabela} ORDER BY concurso DESC LIMIT 1`,
             );
         } catch (error) {
             return res.status(404).json({
@@ -873,30 +849,10 @@ const conferirJogoSimples = async (req, res) => {
 
         const ultimoConcurso = concursoResult.rows[0];
 
-        // 3. Contar acertos (dezenas em comum)
-        const acertos = jogo.dezenas.filter((dezena) =>
-            ultimoConcurso.dezenas.includes(dezena),
-        ).length;
-
-        // 4. Verificar se é premiado
-        let premiado = false;
-        const regrasPremiacao = {
-            megasena: 4,
-            lotofacil: 11,
-            quina: 2,
-            lotomania: 0, // 0 ou 15+
-            duplasena: 3,
-            timemania: 3,
-            diadasorte: 4,
-            maismilionaria: 4,
-        };
-
-        if (jogo.loteria === "lotomania") {
-            premiado = acertos === 0 || acertos >= 15;
-        } else {
-            const minAcertos = regrasPremiacao[jogo.loteria] || 4;
-            premiado = acertos >= minAcertos;
-        }
+        // 3–4. Acertos e prêmio pelas regras oficiais (Dupla Sena por sorteio etc.)
+        const conferencia = conferirPelasRegras(jogo, ultimoConcurso);
+        const acertos = conferencia.acertos;
+        const premiado = conferencia.premiado;
 
         // 5. Atualizar jogo no banco
         await pool.query(
@@ -970,90 +926,36 @@ const conferirTodosSimples = async (req, res) => {
         let conferidos = 0;
         let premiados = 0;
         let erros = 0;
+        const ultimoPorLoteria = new Map();
 
         for (const jogo of jogosResult.rows) {
             try {
-                let concurso;
-                let dezenasSorteadas = [];
-
-                // ============================================
-                // 🎯 TRATAMENTO ESPECÍFICO POR LOTERIA
-                // ============================================
-                if (jogo.loteria === "duplasena") {
-                    const result = await pool.query(`
-            SELECT concurso, dezenas_1, dezenas_2
-            FROM duplasena
-            ORDER BY concurso DESC
-            LIMIT 1
-          `);
-
-                    if (result.rows.length === 0) {
-                        console.log(`⚠️ Dupla-Sena sem concursos`);
-                        erros++;
-                        continue;
-                    }
-
-                    concurso = result.rows[0].concurso;
-
-                    // Unifica os dois sorteios para contagem geral
-                    dezenasSorteadas = [
-                        ...result.rows[0].dezenas_1,
-                        ...result.rows[0].dezenas_2,
-                    ];
-                } else {
-                    // Loterias padrão
+                // Último concurso da loteria (uma consulta por loteria, não por jogo)
+                if (!ultimoPorLoteria.has(jogo.loteria)) {
                     const tabela = tabelaLoteria(jogo.loteria);
                     if (!tabela) {
                         console.error("Loteria inválida no jogo", jogo.id);
                         erros++;
                         continue;
                     }
-
-                    const result = await pool.query(`
-            SELECT concurso, dezenas
-            FROM ${tabela}
-            ORDER BY concurso DESC
-            LIMIT 1
-          `);
-
-                    if (result.rows.length === 0) {
-                        console.log(`⚠️ ${jogo.loteria} sem concursos`);
-                        erros++;
-                        continue;
-                    }
-
-                    concurso = result.rows[0].concurso;
-                    dezenasSorteadas = result.rows[0].dezenas;
+                    const result = await pool.query(
+                        `SELECT * FROM ${tabela} ORDER BY concurso DESC LIMIT 1`,
+                    );
+                    ultimoPorLoteria.set(jogo.loteria, result.rows[0] || null);
+                }
+                const ultimo = ultimoPorLoteria.get(jogo.loteria);
+                if (!ultimo) {
+                    console.log(`⚠️ ${jogo.loteria} sem concursos`);
+                    erros++;
+                    continue;
                 }
 
-                // ============================================
-                // 🎯 CONTAR ACERTOS
-                // ============================================
-                const acertos = jogo.dezenas.filter((d) =>
-                    dezenasSorteadas.includes(d),
-                ).length;
-
-                // ============================================
-                // 🏆 VERIFICAR PREMIAÇÃO
-                // ============================================
-                let premiado = false;
-
-                if (jogo.loteria === "lotomania") {
-                    premiado = acertos === 0 || acertos >= 15;
-                } else {
-                    const minAcertosPorLoteria = {
-                        megasena: 4,
-                        lotofacil: 11,
-                        quina: 2,
-                        duplasena: 3,
-                        timemania: 3,
-                        diadasorte: 4,
-                        maismilionaria: 4,
-                    };
-
-                    const minimo = minAcertosPorLoteria[jogo.loteria] || 4;
-                    premiado = acertos >= minimo;
-                }
+                // Regras oficiais (services/conferencia.js): Dupla Sena por sorteio,
+                // +Milionária com trevos, Time do Coração / Mês da Sorte
+                const conferencia = conferirPelasRegras(jogo, ultimo);
+                const concurso = conferencia.concurso;
+                const acertos = conferencia.acertos;
+                const premiado = conferencia.premiado;
 
                 // ============================================
                 // 💾 ATUALIZAR JOGO
@@ -1147,6 +1049,14 @@ const excluirJogosEmLote = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: "Nenhum jogo selecionado para exclusão.",
+            });
+        }
+
+        // Teto por requisição (o frontend manda em lotes de até 500)
+        if (ids.length > LIMITE_MAXIMO || !ids.every((id) => Number.isInteger(id) && id > 0)) {
+            return res.status(400).json({
+                success: false,
+                message: `Envie de 1 a ${LIMITE_MAXIMO} jogos por vez.`,
             });
         }
 

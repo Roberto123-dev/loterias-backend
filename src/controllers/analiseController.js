@@ -2,6 +2,25 @@
 const pool = require("../config/database");
 const { tabelaLoteria, REGRAS_LOTERIA } = require("../config/loterias");
 
+// Colunas de dezenas e desdobramento por sorteio.
+// Dupla Sena: cada sorteio é um evento (1º e 2º viram dois sorteios em sequência) —
+// dezenas de sorteios diferentes nunca se misturam.
+function colunasDezenas(loteria) {
+    return loteria === "duplasena" ? "dezenas_1, dezenas_2" : "dezenas";
+}
+
+function sorteiosEmOrdem(loteria, linhas) {
+    if (loteria !== "duplasena") {
+        return linhas.map((l) => ({ concurso: l.concurso, rotulo: String(l.concurso), dezenas: l.dezenas }));
+    }
+    return linhas.flatMap((l) => [
+        { concurso: l.concurso, rotulo: `${l.concurso} (1º)`, dezenas: l.dezenas_1 || [] },
+        { concurso: l.concurso, rotulo: `${l.concurso} (2º)`, dezenas: l.dezenas_2 || [] },
+    ]);
+}
+
+const unidadeDe = (loteria) => (loteria === "duplasena" ? "sorteios" : "concursos");
+
 // Mesmo limite que a tela de Análise de Combinações já mostra ao usuário
 const MAX_COMBINACOES = 100;
 
@@ -68,7 +87,7 @@ const analisarCombinacoes = async (req, res) => {
         // =========================
         const { rows } = await pool.query(
             `
-      SELECT concurso, dezenas
+      SELECT concurso, ${colunasDezenas(loteria)}
       FROM ${tabela}
       ORDER BY concurso DESC
       LIMIT $1
@@ -80,8 +99,8 @@ const analisarCombinacoes = async (req, res) => {
             return res.json({ success: true, resultados: [] });
         }
 
-        // Inverter para ordem cronológica
-        const concursosOrdenados = rows.reverse();
+        // Ordem cronológica, um item por sorteio (Dupla Sena: 2 por concurso)
+        const concursosOrdenados = sorteiosEmOrdem(loteria, rows.reverse());
 
         // =========================
         // PROCESSAR COMBINAÇÕES
@@ -141,6 +160,7 @@ const analisarCombinacoes = async (req, res) => {
         return res.json({
             success: true,
             totalConcursos: concursosOrdenados.length,
+            unidade: unidadeDe(loteria),
             totalCombinacoes: combinacoes.length,
             resultados,
         });
@@ -184,10 +204,10 @@ const analisarDezenas = async (req, res) => {
     try {
         // Buscar todos os concursos da loteria
         const result = await pool.query(
-            `SELECT concurso, dezenas FROM ${tabela} ORDER BY concurso ASC`,
+            `SELECT concurso, ${colunasDezenas(loteria)} FROM ${tabela} ORDER BY concurso ASC`,
         );
 
-        const concursos = result.rows;
+        const concursos = sorteiosEmOrdem(loteria, result.rows);
 
         const estatisticas = dezenas.map((dez) => {
             let qtd = 0;
@@ -202,7 +222,7 @@ const analisarDezenas = async (req, res) => {
                     if (atrasoTemp > 0) atrasos.push(atrasoTemp);
                     atrasoTemp = 0;
                     qtd++;
-                    ultimo = concurso.concurso;
+                    ultimo = concurso.rotulo;
                 } else {
                     atrasoTemp++;
                 }
@@ -227,7 +247,7 @@ const analisarDezenas = async (req, res) => {
             };
         });
 
-        res.json({ success: true, data: estatisticas });
+        res.json({ success: true, unidade: unidadeDe(loteria), data: estatisticas });
     } catch (error) {
         console.error("Erro ao analisar dezenas:", error);
         res.status(500).json({
