@@ -92,6 +92,7 @@ const planosRoutes = require("./routes/planosRoutes");
 // IMPORTAR ROTAS ADMIN
 // ============================================
 const adminRoutes = require("./routes/adminRoutes");
+const bancasRoutes = require("./routes/bancasRoutes");
 
 // ============================================
 // IMPORTAR ROTAS DE ATUALIZAÇÃO E AGENDADOR
@@ -108,7 +109,7 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(express.static("src/public"));
 
-// Middleware de log
+// Middleware de log (só método e caminho; o clique em banca leva a banca no corpo, que não é logado)
 app.use((req, res, next) => {
     console.log(`${req.method} ${req.path}`);
     next();
@@ -136,6 +137,7 @@ app.use("/api/planos", planosRoutes);
 // ROTAS ADMIN
 // ============================================
 app.use("/api/admin", adminRoutes);
+app.use("/api/bancas", bancasRoutes);
 
 // ============================================
 // ROTAS DE ATUALIZAÇÃO

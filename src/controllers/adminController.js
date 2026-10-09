@@ -423,7 +423,27 @@ const resetarSenha = async (req, res) => {
 // ============================================
 // EXPORTAR FUNÇÕES
 // ============================================
+// GET /api/admin/bancas/cliques — contagem por banca (total, 7 e 30 dias)
+const getCliquesBancas = async (req, res) => {
+    try {
+        const { rows } = await pool.query(
+            `SELECT banca_id,
+                    COUNT(*)::int AS total,
+                    COUNT(*) FILTER (WHERE criado_em >= NOW() - INTERVAL '7 days')::int AS ultimos_7_dias,
+                    COUNT(*) FILTER (WHERE criado_em >= NOW() - INTERVAL '30 days')::int AS ultimos_30_dias
+               FROM bancas_cliques
+              GROUP BY banca_id
+              ORDER BY total DESC`,
+        );
+        res.json({ success: true, data: rows });
+    } catch (error) {
+        console.error("Erro ao buscar cliques das bancas:", error.code || error);
+        res.status(500).json({ success: false, message: "Erro ao buscar cliques." });
+    }
+};
+
 module.exports = {
+    getCliquesBancas,
     verificarAdmin,
     getDashboard,
     listarUsuarios,
