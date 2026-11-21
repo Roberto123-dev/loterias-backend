@@ -8,6 +8,7 @@ const app = express();
 if (process.env.NODE_ENV === "production") app.set("trust proxy", 1);
 const pool = require("./config/database");
 const errorHandler = require("./middlewares/errorHandler");
+const { limitePublicoGeral } = require("./middlewares/rateLimit");
 const resultadosRoutes = require("./routes/resultadosRoutes");
 const loteriasRoutes = require("./routes/loteriasRoutes");
 const analiseRoutes = require("./routes/analiseRoutes");
@@ -66,12 +67,6 @@ app.use(
 );
 
 // ============================================
-// IMPORTAR ROTAS DE AUTENTICAÇÃO
-// ============================================
-const authRoutes = require("./routes/auth");
-const jogosRoutes = require("./routes/jogosRoutes");
-
-// ============================================
 // IMPORTAR ROTAS DE LOTERIAS
 // ============================================
 const lotofacilRoutes = require("./routes/lotofacilRoutes");
@@ -82,17 +77,6 @@ const duplasenaRoutes = require("./routes/duplasenaRoutes");
 const diadasorteRoutes = require("./routes/diadasorteRoutes");
 const timemaniaRoutes = require("./routes/timemaniaRoutes");
 const maismilionariaRoutes = require("./routes/maismilionariaRoutes");
-
-// ============================================
-// IMPORTAR ROTAS DE USUÁRIO E PLANOS
-// ============================================
-const planosRoutes = require("./routes/planosRoutes");
-
-// ============================================
-// IMPORTAR ROTAS ADMIN
-// ============================================
-const adminRoutes = require("./routes/adminRoutes");
-const bancasRoutes = require("./routes/bancasRoutes");
 
 // ============================================
 // IMPORTAR ROTAS DE ATUALIZAÇÃO E AGENDADOR
@@ -116,28 +100,15 @@ app.use((req, res, next) => {
 });
 
 // ============================================
-// ROTAS DE AUTENTICAÇÃO E USUÁRIO
+// ROTAS DE RESULTADOS
 // ============================================
-app.use("/api/auth", authRoutes);
-app.use("/api/jogos", jogosRoutes);
-app.use("/api/resultados", resultadosRoutes);
-app.use("/api/loterias", loteriasRoutes);
+app.use("/api/resultados", limitePublicoGeral, resultadosRoutes);
+app.use("/api/loterias", limitePublicoGeral, loteriasRoutes);
 
 // ============================================
 // ROTAS DE ANÁLISE DE DEZENAS
 // ============================================
-app.use("/api/analise", analiseRoutes);
-
-// ============================================
-// ROTAS DE PLANOS
-// ============================================
-app.use("/api/planos", planosRoutes);
-
-// ============================================
-// ROTAS ADMIN
-// ============================================
-app.use("/api/admin", adminRoutes);
-app.use("/api/bancas", bancasRoutes);
+app.use("/api/analise", limitePublicoGeral, analiseRoutes);
 
 // ============================================
 // ROTAS DE ATUALIZAÇÃO
@@ -180,14 +151,14 @@ app.get("/health", async (req, res) => {
 // ============================================
 // ROTAS DAS LOTERIAS
 // ============================================
-app.use("/lotofacil", lotofacilRoutes);
-app.use("/megasena", megasenaRoutes);
-app.use("/quina", quinaRoutes);
-app.use("/lotomania", lotomaniaRoutes);
-app.use("/duplasena", duplasenaRoutes);
-app.use("/diadasorte", diadasorteRoutes);
-app.use("/timemania", timemaniaRoutes);
-app.use("/maismilionaria", maismilionariaRoutes);
+app.use("/lotofacil", limitePublicoGeral, lotofacilRoutes);
+app.use("/megasena", limitePublicoGeral, megasenaRoutes);
+app.use("/quina", limitePublicoGeral, quinaRoutes);
+app.use("/lotomania", limitePublicoGeral, lotomaniaRoutes);
+app.use("/duplasena", limitePublicoGeral, duplasenaRoutes);
+app.use("/diadasorte", limitePublicoGeral, diadasorteRoutes);
+app.use("/timemania", limitePublicoGeral, timemaniaRoutes);
+app.use("/maismilionaria", limitePublicoGeral, maismilionariaRoutes);
 
 // ============================================
 // ROTA 404
@@ -201,7 +172,6 @@ app.use((req, res) => {
         sugestoes: [
             "Verifique a URL",
             "Consulte a documentação em GET /",
-            "Verifique se está autenticado (header Authorization)",
         ],
     });
 });
@@ -235,18 +205,15 @@ app.listen(PORT, "0.0.0.0", () => {
         console.log(`🚀 Servidor escutando na porta ${PORT}`);
         console.log(`📊 Documentação: http://localhost:${PORT}/`);
         console.log(`❤️  Health Check: http://localhost:${PORT}/health`);
-        console.log(`🔐 Painel Admin: http://localhost:${PORT}/admin`);
     } else {
         console.log("🌍 Executando em PRODUÇÃO (Railway)");
     }
 
     console.log("=".repeat(50));
     console.log("\n📋 Recursos Disponíveis:");
-    console.log("   ✅ Sistema de autenticação JWT");
     console.log("   ✅ 8 loterias brasileiras");
     console.log("   ✅ Atualização automática de resultados");
     console.log("   ✅ Estatísticas e análises");
-    console.log("   ✅ Painel Administrativo");
 
     console.log("\n🌐 CORS configurado para:");
     validOrigins.forEach((origin) => {
@@ -254,7 +221,6 @@ app.listen(PORT, "0.0.0.0", () => {
     });
 
     console.log("\n⏰ Iniciando agendador de atualizações...");
-    console.log("🔐 JWT configurado:", !!process.env.JWT_SECRET);
 
     // Iniciar agendador de atualizações
     const isDevelopment = NODE_ENV === "development";
