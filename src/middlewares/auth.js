@@ -3,12 +3,11 @@ const jwt = require("jsonwebtoken");
 const pool = require("../config/database");
 
 const { JWT_SECRET } = require("../config/jwt");
-const { limiteGeralUsuario } = require("./rateLimit");
 
 /**
  * Middleware de autenticação (único — use em toda rota que exige login).
  * Busca o usuário no banco a cada requisição: usuário removido perde o acesso
- * na hora, sem esperar o token expirar. Aplica também o limite geral por usuário.
+ * na hora, sem esperar o token expirar.
  * Sistema gratuito: não há verificação de plano.
  */
 const verificarToken = async (req, res, next) => {
@@ -55,7 +54,7 @@ const verificarToken = async (req, res, next) => {
         // (ex.: clique em banca parceira) não registram nem o id.
         if (!req.semLogDeUsuario) console.log(`✅ [AUTH] Usuário ${usuario.id}`);
 
-        return limiteGeralUsuario(req, res, next);
+        return next();
     } catch (error) {
         if (error.name === "TokenExpiredError") {
             return res.status(401).json({

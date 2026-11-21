@@ -8,6 +8,7 @@ const app = express();
 if (process.env.NODE_ENV === "production") app.set("trust proxy", 1);
 const pool = require("./config/database");
 const errorHandler = require("./middlewares/errorHandler");
+const { limitePublicoGeral } = require("./middlewares/rateLimit");
 const resultadosRoutes = require("./routes/resultadosRoutes");
 const loteriasRoutes = require("./routes/loteriasRoutes");
 const analiseRoutes = require("./routes/analiseRoutes");
@@ -120,13 +121,13 @@ app.use((req, res, next) => {
 // ============================================
 app.use("/api/auth", authRoutes);
 app.use("/api/jogos", jogosRoutes);
-app.use("/api/resultados", resultadosRoutes);
-app.use("/api/loterias", loteriasRoutes);
+app.use("/api/resultados", limitePublicoGeral, resultadosRoutes);
+app.use("/api/loterias", limitePublicoGeral, loteriasRoutes);
 
 // ============================================
 // ROTAS DE ANÁLISE DE DEZENAS
 // ============================================
-app.use("/api/analise", analiseRoutes);
+app.use("/api/analise", limitePublicoGeral, analiseRoutes);
 
 // ============================================
 // ROTAS DE PLANOS
@@ -180,14 +181,14 @@ app.get("/health", async (req, res) => {
 // ============================================
 // ROTAS DAS LOTERIAS
 // ============================================
-app.use("/lotofacil", lotofacilRoutes);
-app.use("/megasena", megasenaRoutes);
-app.use("/quina", quinaRoutes);
-app.use("/lotomania", lotomaniaRoutes);
-app.use("/duplasena", duplasenaRoutes);
-app.use("/diadasorte", diadasorteRoutes);
-app.use("/timemania", timemaniaRoutes);
-app.use("/maismilionaria", maismilionariaRoutes);
+app.use("/lotofacil", limitePublicoGeral, lotofacilRoutes);
+app.use("/megasena", limitePublicoGeral, megasenaRoutes);
+app.use("/quina", limitePublicoGeral, quinaRoutes);
+app.use("/lotomania", limitePublicoGeral, lotomaniaRoutes);
+app.use("/duplasena", limitePublicoGeral, duplasenaRoutes);
+app.use("/diadasorte", limitePublicoGeral, diadasorteRoutes);
+app.use("/timemania", limitePublicoGeral, timemaniaRoutes);
+app.use("/maismilionaria", limitePublicoGeral, maismilionariaRoutes);
 
 // ============================================
 // ROTA 404

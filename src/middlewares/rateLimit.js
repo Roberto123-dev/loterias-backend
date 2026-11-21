@@ -47,6 +47,27 @@ const limiteRegistro = criarLimite({ janelaMs: 60 * 60 * 1000, limite: 5 });
 const limiteForgot = criarLimite({ janelaMs: 60 * 60 * 1000, limite: 5 });
 
 // ============================================
+// Limites por IP para as consultas do site (não dependem de login)
+// Chave padrão da biblioteca: IP (com IPv6 agrupado em /56 pelo ipKeyGenerator
+// interno da v8). O IP vem do trust proxy (index.js).
+// ============================================
+function criarLimitePorIp(opcoes) {
+    return criarLimite({
+        mensagem: "Você fez muitas consultas em pouco tempo.",
+        ...opcoes,
+    });
+}
+
+// Rede de segurança para as rotas de consulta: /api/resultados, /api/loterias,
+// as 8 loterias e /api/analise (aplicado nos app.use do index.js).
+// Uma instância só: o contador é somado entre esses routers.
+const limitePublicoGeral = criarLimitePorIp({ janelaMs: 60 * 1000, limite: 300 });
+// POST /api/analise/* — varre o histórico a cada chamada
+const limiteAnalise = criarLimitePorIp({ janelaMs: 5 * 60 * 1000, limite: 30 });
+// GET /<loteria>/numero/:numero
+const limiteNumero = criarLimitePorIp({ janelaMs: 60 * 1000, limite: 60 });
+
+// ============================================
 // Limites por USUÁRIO logado — rodam depois de verificarToken (req.usuario)
 // ============================================
 function criarLimitePorUsuario(opcoes) {
@@ -57,12 +78,6 @@ function criarLimitePorUsuario(opcoes) {
     });
 }
 
-// Rede de segurança para qualquer rota autenticada (aplicado dentro de verificarToken)
-const limiteGeralUsuario = criarLimitePorUsuario({ janelaMs: 60 * 1000, limite: 300 });
-// POST /api/analise/* — varre o histórico a cada chamada
-const limiteAnalise = criarLimitePorUsuario({ janelaMs: 5 * 60 * 1000, limite: 30 });
-// GET /<loteria>/numero/:numero
-const limiteNumero = criarLimitePorUsuario({ janelaMs: 60 * 1000, limite: 60 });
 // POST /api/bancas/clique — contador de cliques das Bancas Parceiras
 const limiteCliqueBanca = criarLimitePorUsuario({ janelaMs: 60 * 60 * 1000, limite: 30 });
 // POST /api/jogos/conferir-todos-simples — ~3 consultas por jogo salvo
@@ -72,7 +87,7 @@ module.exports = {
     limiteLogin,
     limiteRegistro,
     limiteForgot,
-    limiteGeralUsuario,
+    limitePublicoGeral,
     limiteAnalise,
     limiteNumero,
     limiteConferirTodos,
