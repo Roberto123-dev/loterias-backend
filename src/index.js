@@ -84,17 +84,6 @@ const timemaniaRoutes = require("./routes/timemaniaRoutes");
 const maismilionariaRoutes = require("./routes/maismilionariaRoutes");
 
 // ============================================
-// IMPORTAR ROTAS DE USUÁRIO E PLANOS
-// ============================================
-const planosRoutes = require("./routes/planosRoutes");
-
-// ============================================
-// IMPORTAR ROTAS ADMIN
-// ============================================
-const adminRoutes = require("./routes/adminRoutes");
-const bancasRoutes = require("./routes/bancasRoutes");
-
-// ============================================
 // IMPORTAR ROTAS DE ATUALIZAÇÃO E AGENDADOR
 // ============================================
 const atualizadorRoutes = require("./routes/atualizadorRoutes");
@@ -126,17 +115,6 @@ app.use("/api/loterias", limitePublicoGeral, loteriasRoutes);
 // ROTAS DE ANÁLISE DE DEZENAS
 // ============================================
 app.use("/api/analise", limitePublicoGeral, analiseRoutes);
-
-// ============================================
-// ROTAS DE PLANOS
-// ============================================
-app.use("/api/planos", planosRoutes);
-
-// ============================================
-// ROTAS ADMIN
-// ============================================
-app.use("/api/admin", adminRoutes);
-app.use("/api/bancas", bancasRoutes);
 
 // ============================================
 // ROTAS DE ATUALIZAÇÃO

@@ -2,7 +2,6 @@
 const express = require("express");
 const router = express.Router();
 const quinaController = require("../controllers/quinaController");
-const { verificarToken, verificarAdmin } = require("../middlewares/auth");
 const { limiteNumero } = require("../middlewares/rateLimit");
 const { cacheResposta } = require("../middlewares/cacheResposta");
 
@@ -17,13 +16,6 @@ router.get(
     "/numero/:numero",
     limiteNumero,
     quinaController.buscarPorNumero,
-);
-router.post("/", verificarToken, verificarAdmin, quinaController.criar);
-router.delete(
-    "/:concurso",
-    verificarToken,
-    verificarAdmin,
-    quinaController.deletar,
 );
 
 module.exports = router;

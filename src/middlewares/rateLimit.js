@@ -67,20 +67,6 @@ const limiteAnalise = criarLimitePorIp({ janelaMs: 5 * 60 * 1000, limite: 30 });
 // GET /<loteria>/numero/:numero
 const limiteNumero = criarLimitePorIp({ janelaMs: 60 * 1000, limite: 60 });
 
-// ============================================
-// Limites por USUÁRIO logado — rodam depois de verificarToken (req.usuario)
-// ============================================
-function criarLimitePorUsuario(opcoes) {
-    return criarLimite({
-        mensagem: "Você fez muitas consultas em pouco tempo.",
-        keyGenerator: (req) => `usuario:${req.usuario.id}`,
-        ...opcoes,
-    });
-}
-
-// POST /api/bancas/clique — contador de cliques das Bancas Parceiras
-const limiteCliqueBanca = criarLimitePorUsuario({ janelaMs: 60 * 60 * 1000, limite: 30 });
-
 module.exports = {
     limiteLogin,
     limiteRegistro,
@@ -88,5 +74,4 @@ module.exports = {
     limitePublicoGeral,
     limiteAnalise,
     limiteNumero,
-    limiteCliqueBanca,
 };

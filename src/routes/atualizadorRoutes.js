@@ -8,7 +8,6 @@ const {
     LOTERIAS_CONFIG,
 } = require("../services/atualizadorLoterias.js");
 const { exigirCronSecret } = require("../middlewares/exigirCronSecret");
-const { verificarToken } = require("../middlewares/auth");
 
 /**
  * GET /api/atualizar/forcar
@@ -32,41 +31,6 @@ router.get("/forcar", exigirCronSecret, async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Erro na atualização",
-        });
-    }
-});
-
-/**
- * GET /api/atualizar/status/loterias
- * Status de cada loteria (apenas leitura). Exige login.
- */
-router.get("/status/loterias", verificarToken, async (req, res) => {
-    try {
-        const pool = require("../config/database");
-        const status = {};
-
-        for (const [id, config] of Object.entries(LOTERIAS_CONFIG)) {
-            const result = await pool.query(
-                `SELECT MAX(concurso) as ultimo, COUNT(*) as total FROM ${config.tabela}`,
-            );
-
-            status[id] = {
-                nome: config.nome,
-                ultimoConcurso: result.rows[0].ultimo,
-                totalConcursos: parseInt(result.rows[0].total),
-            };
-        }
-
-        res.json({
-            success: true,
-            data: status,
-            timestamp: new Date(),
-        });
-    } catch (error) {
-        console.error("Erro ao buscar status:", error);
-        res.status(500).json({
-            success: false,
-            message: "Erro ao buscar status",
         });
     }
 });

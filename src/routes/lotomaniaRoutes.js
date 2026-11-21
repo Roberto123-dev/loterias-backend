@@ -2,7 +2,6 @@
 const express = require("express");
 const router = express.Router();
 const lotomaniaController = require("../controllers/lotomaniaController");
-const { verificarToken, verificarAdmin } = require("../middlewares/auth");
 const { limiteNumero } = require("../middlewares/rateLimit");
 const { cacheResposta } = require("../middlewares/cacheResposta");
 
@@ -17,13 +16,6 @@ router.get(
     "/numero/:numero",
     limiteNumero,
     lotomaniaController.buscarPorNumero,
-);
-router.post("/", verificarToken, verificarAdmin, lotomaniaController.criar);
-router.delete(
-    "/:concurso",
-    verificarToken,
-    verificarAdmin,
-    lotomaniaController.deletar,
 );
 
 module.exports = router;
