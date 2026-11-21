@@ -3,10 +3,9 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../config/database");
 const resultadosCache = require("../services/resultadosCache");
-const { verificarToken } = require("../middlewares/auth");
 
-// Login obrigatório (o cache em memória continua o mesmo para todos)
-router.get("/ultimos-todos", verificarToken, async (req, res) => {
+// Pública (o cache em memória é o mesmo para todos)
+router.get("/ultimos-todos", async (req, res) => {
     try {
         const emCache = resultadosCache.get();
         if (emCache) {

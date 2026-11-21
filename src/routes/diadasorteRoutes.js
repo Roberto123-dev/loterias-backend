@@ -6,23 +6,20 @@ const { verificarToken, verificarAdmin } = require("../middlewares/auth");
 const { limiteNumero } = require("../middlewares/rateLimit");
 const { cacheResposta } = require("../middlewares/cacheResposta");
 
-router.get("/", verificarToken, diadasorteController.listarTodos);
-router.get("/ultimo", verificarToken, diadasorteController.buscarUltimo);
-router.get("/estatisticas", verificarToken, cacheResposta, diadasorteController.estatisticas);
+router.get("/", diadasorteController.listarTodos);
+router.get("/ultimo", diadasorteController.buscarUltimo);
+router.get("/estatisticas", cacheResposta, diadasorteController.estatisticas);
 router.get(
     "/:concurso",
-    verificarToken,
     diadasorteController.buscarPorConcurso,
 );
 router.get(
     "/numero/:numero",
-    verificarToken,
     limiteNumero,
     diadasorteController.buscarPorNumero,
 );
 router.get(
     "/mes/:mes",
-    verificarToken,
     diadasorteController.buscarPorMes,
 );
 router.post("/", verificarToken, verificarAdmin, diadasorteController.criar);

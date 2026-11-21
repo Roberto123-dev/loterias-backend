@@ -6,17 +6,15 @@ const { verificarToken, verificarAdmin } = require("../middlewares/auth");
 const { limiteNumero } = require("../middlewares/rateLimit");
 const { cacheResposta } = require("../middlewares/cacheResposta");
 
-router.get("/", verificarToken, duplasenaController.listarTodos);
-router.get("/ultimo", verificarToken, duplasenaController.buscarUltimo);
-router.get("/estatisticas", verificarToken, cacheResposta, duplasenaController.estatisticas);
+router.get("/", duplasenaController.listarTodos);
+router.get("/ultimo", duplasenaController.buscarUltimo);
+router.get("/estatisticas", cacheResposta, duplasenaController.estatisticas);
 router.get(
     "/:concurso",
-    verificarToken,
     duplasenaController.buscarPorConcurso,
 );
 router.get(
     "/numero/:numero",
-    verificarToken,
     limiteNumero,
     duplasenaController.buscarPorNumero,
 );

@@ -6,17 +6,15 @@ const { verificarToken, verificarAdmin } = require("../middlewares/auth");
 const { limiteNumero } = require("../middlewares/rateLimit");
 const { cacheResposta } = require("../middlewares/cacheResposta");
 
-router.get("/", verificarToken, quinaController.listarTodos);
-router.get("/ultimo", verificarToken, quinaController.buscarUltimo);
-router.get("/estatisticas", verificarToken, cacheResposta, quinaController.estatisticas);
+router.get("/", quinaController.listarTodos);
+router.get("/ultimo", quinaController.buscarUltimo);
+router.get("/estatisticas", cacheResposta, quinaController.estatisticas);
 router.get(
     "/:concurso",
-    verificarToken,
     quinaController.buscarPorConcurso,
 );
 router.get(
     "/numero/:numero",
-    verificarToken,
     limiteNumero,
     quinaController.buscarPorNumero,
 );
