@@ -172,7 +172,6 @@ app.use((req, res) => {
         sugestoes: [
             "Verifique a URL",
             "Consulte a documentação em GET /",
-            "Verifique se está autenticado (header Authorization)",
         ],
     });
 });
@@ -206,18 +205,15 @@ app.listen(PORT, "0.0.0.0", () => {
         console.log(`🚀 Servidor escutando na porta ${PORT}`);
         console.log(`📊 Documentação: http://localhost:${PORT}/`);
         console.log(`❤️  Health Check: http://localhost:${PORT}/health`);
-        console.log(`🔐 Painel Admin: http://localhost:${PORT}/admin`);
     } else {
         console.log("🌍 Executando em PRODUÇÃO (Railway)");
     }
 
     console.log("=".repeat(50));
     console.log("\n📋 Recursos Disponíveis:");
-    console.log("   ✅ Sistema de autenticação JWT");
     console.log("   ✅ 8 loterias brasileiras");
     console.log("   ✅ Atualização automática de resultados");
     console.log("   ✅ Estatísticas e análises");
-    console.log("   ✅ Painel Administrativo");
 
     console.log("\n🌐 CORS configurado para:");
     validOrigins.forEach((origin) => {

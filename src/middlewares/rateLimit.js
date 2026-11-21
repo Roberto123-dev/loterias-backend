@@ -1,12 +1,14 @@
 const { rateLimit } = require("express-rate-limit");
 
+// Todos os limites são por IP (não há login).
+//
 // ⚠️ Armazenamento em memória: vale para 1 instância. Com réplicas, cada uma conta
 // separado (o limite real se multiplica); restart/deploy zera os contadores.
 // Para escalar: trocar por um store compartilhado (ex.: rate-limit-redis).
 //
 // Resposta 429 (todas): { success: false, code: "LIMITE_ATINGIDO", message, tenteNovamenteEm }
 // tenteNovamenteEm = segundos até liberar; a message já diz o tempo de espera em texto
-// (as telas de login/cadastro mostram a message direto).
+// (o frontend, em js/config.js, mostra um aviso com o tempo de espera).
 function formatarEspera(segundos) {
     if (segundos < 60) return `${segundos} segundo${segundos === 1 ? "" : "s"}`;
     const minutos = Math.ceil(segundos / 60);
@@ -38,7 +40,7 @@ function criarLimite({ janelaMs, limite, mensagem = "Muitas tentativas.", ...ext
 }
 
 // ============================================
-// Limites por IP para as consultas do site (não dependem de login)
+// Limites por IP para as consultas do site
 // Chave padrão da biblioteca: IP (com IPv6 agrupado em /56 pelo ipKeyGenerator
 // interno da v8). O IP vem do trust proxy (index.js).
 // ============================================
