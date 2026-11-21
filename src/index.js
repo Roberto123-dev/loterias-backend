@@ -67,11 +67,6 @@ app.use(
 );
 
 // ============================================
-// IMPORTAR ROTAS DE AUTENTICAÇÃO
-// ============================================
-const authRoutes = require("./routes/auth");
-
-// ============================================
 // IMPORTAR ROTAS DE LOTERIAS
 // ============================================
 const lotofacilRoutes = require("./routes/lotofacilRoutes");
@@ -105,9 +100,8 @@ app.use((req, res, next) => {
 });
 
 // ============================================
-// ROTAS DE AUTENTICAÇÃO E USUÁRIO
+// ROTAS DE RESULTADOS
 // ============================================
-app.use("/api/auth", authRoutes);
 app.use("/api/resultados", limitePublicoGeral, resultadosRoutes);
 app.use("/api/loterias", limitePublicoGeral, loteriasRoutes);
 
@@ -231,7 +225,6 @@ app.listen(PORT, "0.0.0.0", () => {
     });
 
     console.log("\n⏰ Iniciando agendador de atualizações...");
-    console.log("🔐 JWT configurado:", !!process.env.JWT_SECRET);
 
     // Iniciar agendador de atualizações
     const isDevelopment = NODE_ENV === "development";

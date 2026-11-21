@@ -37,15 +37,6 @@ function criarLimite({ janelaMs, limite, mensagem = "Muitas tentativas.", ...ext
     });
 }
 
-// Login: só tentativas que falham contam (não bloqueia quem entra várias vezes do mesmo IP)
-const limiteLogin = criarLimite({
-    janelaMs: 15 * 60 * 1000,
-    limite: 10,
-    skipSuccessfulRequests: true,
-});
-const limiteRegistro = criarLimite({ janelaMs: 60 * 60 * 1000, limite: 5 });
-const limiteForgot = criarLimite({ janelaMs: 60 * 60 * 1000, limite: 5 });
-
 // ============================================
 // Limites por IP para as consultas do site (não dependem de login)
 // Chave padrão da biblioteca: IP (com IPv6 agrupado em /56 pelo ipKeyGenerator
@@ -68,9 +59,6 @@ const limiteAnalise = criarLimitePorIp({ janelaMs: 5 * 60 * 1000, limite: 30 });
 const limiteNumero = criarLimitePorIp({ janelaMs: 60 * 1000, limite: 60 });
 
 module.exports = {
-    limiteLogin,
-    limiteRegistro,
-    limiteForgot,
     limitePublicoGeral,
     limiteAnalise,
     limiteNumero,
