@@ -70,7 +70,6 @@ app.use(
 // IMPORTAR ROTAS DE AUTENTICAÇÃO
 // ============================================
 const authRoutes = require("./routes/auth");
-const jogosRoutes = require("./routes/jogosRoutes");
 
 // ============================================
 // IMPORTAR ROTAS DE LOTERIAS
@@ -120,7 +119,6 @@ app.use((req, res, next) => {
 // ROTAS DE AUTENTICAÇÃO E USUÁRIO
 // ============================================
 app.use("/api/auth", authRoutes);
-app.use("/api/jogos", jogosRoutes);
 app.use("/api/resultados", limitePublicoGeral, resultadosRoutes);
 app.use("/api/loterias", limitePublicoGeral, loteriasRoutes);
 

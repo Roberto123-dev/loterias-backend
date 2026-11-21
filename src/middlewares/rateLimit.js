@@ -80,8 +80,6 @@ function criarLimitePorUsuario(opcoes) {
 
 // POST /api/bancas/clique — contador de cliques das Bancas Parceiras
 const limiteCliqueBanca = criarLimitePorUsuario({ janelaMs: 60 * 60 * 1000, limite: 30 });
-// POST /api/jogos/conferir-todos-simples — ~3 consultas por jogo salvo
-const limiteConferirTodos = criarLimitePorUsuario({ janelaMs: 60 * 60 * 1000, limite: 10 });
 
 module.exports = {
     limiteLogin,
@@ -90,6 +88,5 @@ module.exports = {
     limitePublicoGeral,
     limiteAnalise,
     limiteNumero,
-    limiteConferirTodos,
     limiteCliqueBanca,
 };
