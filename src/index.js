@@ -50,19 +50,14 @@ app.use(
 
             // Verificar se origin está na lista
             if (validOrigins.indexOf(origin) === -1) {
-                console.warn(`⚠️ Origin bloqueada pelo CORS: ${origin}`);
-                return callback(
-                    new Error(`Origin não permitida pelo CORS: ${origin}`),
-                    false,
-                );
+                console.warn(`⚠️ CORS: origem bloqueada: ${origin}`);
+                return callback(null, false);
             }
 
-            console.log(`✅ Origin permitida: ${origin}`);
             return callback(null, true);
         },
-        credentials: true,
-        methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization"],
+        methods: ["GET", "POST", "OPTIONS"],
+        allowedHeaders: ["Content-Type"],
     }),
 );
 
