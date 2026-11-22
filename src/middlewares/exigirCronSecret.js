@@ -10,7 +10,8 @@ function segredoConfere(recebido) {
 }
 
 // Exige o CRON_SECRET nas rotas que disparam atualização (Caixa + banco).
-// Aceita "Authorization: Bearer <segredo>" (preferido) ou ?secret= (legado).
+// Só aceita o header "Authorization: Bearer <segredo>". Segredo na query string
+// não autentica: vazaria em logs de proxy e no histórico do navegador.
 function exigirCronSecret(req, res, next) {
     // Defesa em profundidade: nunca aceitar se o segredo configurado estiver vazio
     if (!CRON_SECRET) {
@@ -21,11 +22,13 @@ function exigirCronSecret(req, res, next) {
         });
     }
 
+    if (req.query.secret !== undefined) {
+        console.warn("⚠️ CRON: segredo na query string não é mais aceito — use Authorization: Bearer");
+    }
+
     const auth = req.get("authorization") || "";
     const match = auth.match(/^Bearer\s+(.+)$/i);
-    const viaHeader = match ? match[1] : null;
-    const viaQuery = typeof req.query.secret === "string" ? req.query.secret : null;
-    const recebido = viaHeader ?? viaQuery;
+    const recebido = match ? match[1] : null;
 
     if (!recebido || !segredoConfere(recebido)) {
         return res.status(401).json({
@@ -34,11 +37,6 @@ function exigirCronSecret(req, res, next) {
         });
     }
 
-    if (!viaHeader) {
-        console.warn(
-            "⚠️ CRON_SECRET recebido via query string (legado) — migre para Authorization: Bearer",
-        );
-    }
     next();
 }
 
