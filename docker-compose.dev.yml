@@ -49,8 +49,10 @@ services:
 
 volumes:
     postgres_data:
+        # Volume já existente (criado pelo projeto antigo "meu-projeto"): o Compose só o usa,
+        # não cria nem apaga. Em máquina nova, criar antes: docker volume create meu-projeto-postgres-data
         name: meu-projeto-postgres-data
-        driver: local
+        external: true
 
     meu-projeto-node-modules:
         name: meu-projeto-node-modules
