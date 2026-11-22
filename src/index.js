@@ -2,6 +2,7 @@ require("dotenv").config(); // No topo do arquivo
 const express = require("express");
 const cors = require("cors"); // ⭐ ADICIONAR ESTA LINHA
 const app = express();
+app.disable("x-powered-by");
 
 // Railway: 1 proxy (edge) na frente do app. Nunca `true` — permitiria forjar o IP
 // pelo X-Forwarded-For e burlar o rate limit. Em dev não há proxy.
